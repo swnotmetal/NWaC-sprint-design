@@ -1,0 +1,13 @@
+# Miko local session state
+.miko/state/
+
+# Abandoned first prototype (not part of this repo)
+node_modules/
+src/
+data/
+references/
+.claude/
+miko.json
+CLAUDE.md.example
+package.json
+package-lock.json

@@ -1,0 +1,2059 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>PulseGuard Operations Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              DEFAULT: '#2563eb',
+              hover: '#1d4ed8',
+              subtle: '#eff6ff',
+            },
+            "status-critical": "#DC2626",
+            "status-warning": "#D97706",
+            "status-advisory": "#2563EB",
+            "status-success": "#059669"
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+      background-color: #F9FAFB;
+      color: #111827;
+    }
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+    *, ::before, ::after {
+      box-shadow: none !important;
+      text-shadow: none !important;
+    }
+    ::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
+
+  <!-- React & Router Dependencies -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/history@5/umd/history.development.js"></script>
+  <script src="https://unpkg.com/react-router@6.3.0/umd/react-router.development.js"></script>
+  <script src="https://unpkg.com/react-router-dom@6.3.0/umd/react-router-dom.development.js"></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+</head>
+<body class="min-h-screen flex flex-col bg-[#F9FAFB] text-[#111827]">
+  <div id="root" class="min-h-screen flex flex-col"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+    const { createRoot } = ReactDOM;
+    const { MemoryRouter, Routes, Route, Link, useNavigate, useLocation } = ReactRouterDOM;
+
+    // Toast Context / Global Notification State
+    const Toast = ({ toast, onClose }) => {
+      if (!toast.visible) return null;
+      return (
+        <div className="fixed bottom-6 right-6 z-[100] bg-white border border-[#E5E7EB] rounded-lg p-3.5 flex items-center gap-3 shadow-none">
+          <span className="material-symbols-outlined text-[#059669] text-[20px]">check_circle</span>
+          <div className="text-xs">
+            <span className="font-medium text-[#111827] block">{toast.title}</span>
+            <span className="text-[#6B7280] text-[11px]">{toast.msg}</span>
+          </div>
+          <button onClick={onClose} className="ml-2 text-[#9CA3AF] hover:text-[#111827]">
+            <span className="material-symbols-outlined text-[16px]">close</span>
+          </button>
+        </div>
+      );
+    };
+
+    // Shared Header Component
+    const Header = ({ audioOn, setAudioOn, activeSector, setActiveSector }) => {
+      const location = useLocation();
+
+      return (
+        <header className="w-full bg-white border-b border-[#E5E7EB] sticky top-0 z-40">
+          <div className="max-w-[1720px] mx-auto h-16 px-6 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-6">
+              {/* Brand */}
+              <div className="flex items-center gap-3 pr-4 md:border-r md:border-[#E5E7EB]">
+                <div className="w-8 h-8 rounded-lg bg-[#2563EB] flex items-center justify-center text-white">
+                  <span className="material-symbols-outlined text-[20px]">radar</span>
+                </div>
+                <div>
+                  <div className="text-[14px] font-semibold text-[#111827] leading-tight">PulseGuard Ops</div>
+                  <div className="text-[12px] text-[#6B7280]">Regional Venue · Live Operations</div>
+                </div>
+              </div>
+
+              {/* Status pill */}
+              <div className="hidden xl:flex items-center gap-2 px-2.5 py-1 bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg text-[12px]">
+                <span className="w-2 h-2 rounded-full bg-[#059669]"></span>
+                <span className="text-[#6B7280]">Live Telemetry</span>
+                <span className="font-medium text-[#111827] tabular-nums">99.8%</span>
+                <span className="text-gray-300">|</span>
+                <span className="tabular-nums text-[#111827]">21:42:15 CEST</span>
+              </div>
+
+              {/* Navigation Tabs */}
+              <nav className="flex items-center gap-1">
+                <Link
+                  to="/"
+                  className={`px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors ${
+                    location.pathname === '/' 
+                      ? 'bg-[#EFF6FF] text-[#2563EB] font-semibold' 
+                      : 'text-[#6B7280] hover:text-[#111827] hover:bg-[#F9FAFB]'
+                  }`}
+                >
+                  Live Crowd Map
+                </Link>
+                <Link
+                  to="/alerts"
+                  className={`px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors flex items-center gap-1.5 ${
+                    location.pathname === '/alerts' 
+                      ? 'bg-[#EFF6FF] text-[#2563EB] font-semibold' 
+                      : 'text-[#6B7280] hover:text-[#111827] hover:bg-[#F9FAFB]'
+                  }`}
+                >
+                  Alerts & Actions
+                  <span className="px-1.5 py-0.2 rounded-full bg-[#FEE2E2] text-[#DC2626] text-[11px] font-semibold tabular-nums">
+                    3
+                  </span>
+                </Link>
+                <Link
+                  to="/decisions"
+                  className={`px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors ${
+                    location.pathname === '/decisions' 
+                      ? 'bg-[#EFF6FF] text-[#2563EB] font-semibold' 
+                      : 'text-[#6B7280] hover:text-[#111827] hover:bg-[#F9FAFB]'
+                  }`}
+                >
+                  Decision Log
+                </Link>
+              </nav>
+            </div>
+
+            {/* Right Utilities */}
+            <div className="flex items-center gap-3">
+              <div className="hidden md:flex items-center rounded-lg border border-[#E5E7EB] bg-white px-2.5 py-1 text-xs">
+                <span className="text-[#6B7280] mr-1.5">Sector:</span>
+                <select 
+                  value={activeSector} 
+                  onChange={(e) => setActiveSector(e.target.value)}
+                  className="bg-transparent text-[12px] font-medium text-[#111827] border-0 p-0 focus:ring-0 cursor-pointer"
+                >
+                  <option value="ALL">All Sectors (A–E)</option>
+                  <option value="A">Sector A · North Transit</option>
+                  <option value="B">Sector B · Mid West/East</option>
+                  <option value="C">Sector C · Central Arena</option>
+                  <option value="D">Sector D · Food & Corridor</option>
+                  <option value="E">Sector E · South Entry C</option>
+                </select>
+              </div>
+
+              <button 
+                onClick={() => setAudioOn(!audioOn)}
+                className={`h-8 px-2.5 rounded-lg border border-[#E5E7EB] text-[12px] flex items-center gap-1.5 transition-colors ${
+                  audioOn ? 'bg-[#F9FAFB] text-[#111827]' : 'bg-white text-[#9CA3AF]'
+                }`}
+                title="Toggle Audio Cues"
+              >
+                <span className="material-symbols-outlined text-[16px]">{audioOn ? 'volume_up' : 'volume_off'}</span>
+                <span className="hidden sm:inline">{audioOn ? 'Audio On' : 'Muted'}</span>
+              </button>
+
+              <div className="flex items-center gap-2 pl-2 border-l border-[#E5E7EB]">
+                <div className="w-8 h-8 rounded-full bg-[#E5E7EB] flex items-center justify-center text-[12px] font-semibold text-[#111827]">
+                  RV
+                </div>
+                <div className="hidden sm:flex flex-col text-left">
+                  <span className="text-[12px] font-medium text-[#111827] leading-tight">Cmdr. Vance</span>
+                  <span className="text-[11px] text-[#6B7280]">Duty Lead · L4</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+      );
+    };
+
+    // Shared Operational Footer
+    const Footer = () => (
+      <footer className="w-full bg-white border-t border-[#E5E7EB] py-3 px-6 mt-auto">
+        <div className="max-w-[1720px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-[12px] text-[#6B7280]">
+          <div>SEC-OPS OS v4.18.2 · PulseGuard Platform · Authorized Personnel Only</div>
+          <div className="flex items-center gap-4 tabular-nums">
+            <span>AES-256 GCM</span>
+            <span>Node: EU-Central-01</span>
+            <span>Audit Ledger Active</span>
+          </div>
+        </div>
+      </footer>
+    );
+
+    // ==========================================
+    // SCREEN 1: DECISION LOG COMPONENT
+    // ==========================================
+    const DecisionLogScreen = ({ onShowToast }) => {
+      const [search, setSearch] = useState('');
+      const [filterZone, setFilterZone] = useState('ALL');
+      const [filterSeverity, setFilterSeverity] = useState('ALL');
+      const [filterStatus, setFilterStatus] = useState('ALL');
+      const [briefingOpen, setBriefingOpen] = useState(false);
+
+      const decisionRecords = [
+        {
+          id: 'REC-0492',
+          time: '21:38:04 (4 mins ago)',
+          severity: 'CRITICAL',
+          status: 'OVERRIDDEN',
+          statusLabel: 'Overridden & Escalated',
+          zone: 'Entry C',
+          targetZone: 'Entry C (Sector E3)',
+          subZone: 'Turnstiles C1–C6 Entrance',
+          forecast: '94% Density',
+          forecastSub: 'in 18 min',
+          operator: 'Vance, R. (Commander)',
+          operatorRole: 'Duty Lead Level 4',
+          directive: 'Deploy 4 static staff & hold turnstile 3 intermittently to decelerate ingress rate.',
+          actionTaken: 'Dispatched 4 rapid response officers (Unit 7) & opened secondary bypass Entry C-2.',
+          resolution: 'Stabilized at 78% — overcrowding averted',
+          tag: 'Successful Diversion'
+        },
+        {
+          id: 'REC-0491',
+          time: '21:15:32 (27 mins ago)',
+          severity: 'WARNING',
+          status: 'EXECUTED',
+          statusLabel: 'Executed as Recommended',
+          zone: 'Central Arena',
+          targetZone: 'Central Arena East Barrier',
+          subZone: 'Headline Set: Crowd Surge 2',
+          forecast: '91% Density',
+          forecastSub: 'in 30 min',
+          operator: 'Vance, R. (Commander)',
+          operatorRole: 'Duty Lead Level 4',
+          directive: 'Engage pulse wave crowd calming protocol across secondary PA clusters.',
+          actionTaken: 'Engaged audio-visual buffer message on East towers and illuminated periphery egress LEDs.',
+          resolution: 'Flow slowed by 22% • Compression averted at front-of-house',
+          tag: 'Acoustic Dampening'
+        },
+        {
+          id: 'REC-0488',
+          time: '20:42:10 (1 hr ago)',
+          severity: 'ADVISORY',
+          status: 'EXECUTED',
+          statusLabel: 'Executed',
+          zone: 'Food & Retail',
+          targetZone: 'Food & Retail Plaza',
+          subZone: 'Central Promenade Concourse',
+          forecast: '88% Density',
+          forecastSub: 'bottleneck',
+          operator: 'Alvarez, M. (Deputy)',
+          operatorRole: 'Crowd Dynamics Lead',
+          directive: 'Reroute pedestrian lane via South Path & open overflow hydration hub.',
+          actionTaken: 'Deployed directional LED signage & 2 crowd marshals to shepherd traffic towards South Path.',
+          resolution: 'Queue wait time dropped from 19m to 6 mins',
+          tag: 'Bottleneck Resolved'
+        },
+        {
+          id: 'REC-0482',
+          time: '20:05:44 (Day 2 Surge)',
+          severity: 'CRITICAL',
+          status: 'EXECUTED',
+          statusLabel: 'Resolved / Normalized',
+          zone: 'Entry A',
+          targetZone: 'Entry A (North Entrance)',
+          subZone: 'Transit Interchange Drop',
+          forecast: '96% Density',
+          forecastSub: 'opening peak',
+          operator: 'Alvarez, M. (Deputy)',
+          operatorRole: 'Crowd Dynamics Lead',
+          directive: 'Open 3 secondary magnetic screening lanes and notify municipal bus arrival pacing.',
+          actionTaken: 'Opened screening lanes A4–A6; requested transit dispatch hold of 6 minutes between buses.',
+          resolution: 'Perimeter cleared in 14 min • Ingress normalized to 240/min',
+          tag: 'Verified Clean'
+        }
+      ];
+
+      const filteredRecords = decisionRecords.filter(item => {
+        const query = search.toLowerCase();
+        const matchesQuery = !query || 
+          item.id.toLowerCase().includes(query) ||
+          item.operator.toLowerCase().includes(query) ||
+          item.targetZone.toLowerCase().includes(query) ||
+          item.directive.toLowerCase().includes(query) ||
+          item.actionTaken.toLowerCase().includes(query);
+        const matchesZone = (filterZone === 'ALL') || item.zone === filterZone;
+        const matchesSeverity = (filterSeverity === 'ALL') || item.severity === filterSeverity;
+        const matchesStatus = (filterStatus === 'ALL') || item.status === filterStatus;
+        return matchesQuery && matchesZone && matchesSeverity && matchesStatus;
+      });
+
+      return (
+        <main className="w-full flex-1 max-w-[1600px] mx-auto px-6 py-6 flex flex-col gap-6">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#E5E7EB]">
+            <div>
+              <h1 className="text-[20px] font-semibold text-[#111827] leading-tight">Tactical Decision Log</h1>
+              <p className="text-xs text-[#6B7280] mt-1">
+                Real-time incident interventions, predictive overrides, and chain-of-custody event forensics.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => onShowToast('Audit Export Generated', 'Immutable event packet compiled in .PDF format.')}
+                className="px-3.5 py-2 bg-[#F9FAFB] hover:bg-gray-100 text-[#111827] border border-[#E5E7EB] rounded-lg text-xs font-medium transition-colors flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-[16px] text-[#6B7280]">file_download</span>
+                Export Audit (.PDF/.CSV)
+              </button>
+              <button 
+                onClick={() => setBriefingOpen(true)}
+                className="px-3.5 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-lg text-xs font-medium transition-colors flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-[16px]">badge</span>
+                Shift Handover Briefing
+              </button>
+            </div>
+          </div>
+
+          {/* Metric Tiles */}
+          <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-4 flex flex-col justify-between">
+              <div className="flex items-center justify-between text-xs text-[#6B7280]">
+                <span>Total Interventions</span>
+                <span className="material-symbols-outlined text-[16px]">bolt</span>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-semibold text-[#111827] tabular-nums">19</span>
+                <span className="text-xs text-[#6B7280]">/ 8h shift</span>
+              </div>
+              <div className="mt-1 text-[12px] text-[#2563EB] tabular-nums font-medium">
+                +3 from previous rotation
+              </div>
+            </div>
+
+            <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-4 flex flex-col justify-between">
+              <div className="flex items-center justify-between text-xs text-[#6B7280]">
+                <span>Surges Prevented</span>
+                <span className="material-symbols-outlined text-[16px]">crisis_alert</span>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-semibold text-[#111827] tabular-nums">07</span>
+                <span className="text-xs text-[#6B7280]">critical densities</span>
+              </div>
+              <div className="mt-1 text-[12px] text-[#059669] tabular-nums font-medium">
+                100% barrier integrity
+              </div>
+            </div>
+
+            <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-4 flex flex-col justify-between">
+              <div className="flex items-center justify-between text-xs text-[#6B7280]">
+                <span>Mean Time to Resolution</span>
+                <span className="material-symbols-outlined text-[16px]">timer</span>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-semibold text-[#111827] tabular-nums">3.4m</span>
+                <span className="text-xs text-[#6B7280]">average</span>
+              </div>
+              <div className="mt-1 text-[12px] text-[#059669] tabular-nums font-medium">
+                -42s faster than benchmark
+              </div>
+            </div>
+
+            <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-4 flex flex-col justify-between">
+              <div className="flex items-center justify-between text-xs text-[#6B7280]">
+                <span>Algorithm Accuracy</span>
+                <span className="material-symbols-outlined text-[16px]">analytics</span>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-semibold text-[#111827] tabular-nums">94.2%</span>
+                <span className="text-xs text-[#6B7280]">confidence</span>
+              </div>
+              <div className="mt-1 text-[12px] text-[#6B7280] tabular-nums">
+                84 models aggregated
+              </div>
+            </div>
+          </section>
+
+          {/* Search & Filter Toolbar */}
+          <section className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-3">
+            <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
+              <div className="relative flex-1 max-w-md">
+                <span className="material-symbols-outlined absolute inset-y-0 left-0 pl-2.5 flex items-center text-[18px] text-[#6B7280] pointer-events-none">
+                  search
+                </span>
+                <input 
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 bg-white border border-[#E5E7EB] rounded-lg text-xs text-[#111827] placeholder:text-[#6B7280] focus:outline-none focus:border-[#2563EB]" 
+                  placeholder="Search by operator, directive, zone, or ID..." 
+                  type="text"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center bg-white border border-[#E5E7EB] rounded-lg px-2.5 py-1">
+                  <span className="text-[12px] text-[#6B7280] mr-2">Zone:</span>
+                  <select 
+                    value={filterZone} 
+                    onChange={(e) => setFilterZone(e.target.value)}
+                    className="bg-transparent text-xs text-[#111827] focus:outline-none cursor-pointer"
+                  >
+                    <option value="ALL">All Zones</option>
+                    <option value="Entry A">Entry A (North)</option>
+                    <option value="Entry C">Entry C (East)</option>
+                    <option value="Central Arena">Central Arena</option>
+                    <option value="Food & Retail">Food & Retail</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center bg-white border border-[#E5E7EB] rounded-lg px-2.5 py-1">
+                  <span className="text-[12px] text-[#6B7280] mr-2">Severity:</span>
+                  <select 
+                    value={filterSeverity} 
+                    onChange={(e) => setFilterSeverity(e.target.value)}
+                    className="bg-transparent text-xs text-[#111827] focus:outline-none cursor-pointer"
+                  >
+                    <option value="ALL">All Severity</option>
+                    <option value="CRITICAL">Critical</option>
+                    <option value="WARNING">Warning</option>
+                    <option value="ADVISORY">Advisory</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center bg-white border border-[#E5E7EB] rounded-lg px-2.5 py-1">
+                  <span className="text-[12px] text-[#6B7280] mr-2">Status:</span>
+                  <select 
+                    value={filterStatus} 
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                    className="bg-transparent text-xs text-[#111827] focus:outline-none cursor-pointer"
+                  >
+                    <option value="ALL">All Status</option>
+                    <option value="EXECUTED">Executed</option>
+                    <option value="OVERRIDDEN">Overridden</option>
+                  </select>
+                </div>
+
+                <button 
+                  onClick={() => {
+                    setSearch('');
+                    setFilterZone('ALL');
+                    setFilterSeverity('ALL');
+                    setFilterStatus('ALL');
+                  }}
+                  className="p-1.5 bg-white border border-[#E5E7EB] rounded-lg text-[#6B7280] hover:text-[#111827] hover:bg-gray-50 transition-colors" 
+                  title="Reset Filters"
+                >
+                  <span className="material-symbols-outlined text-[16px] block">restart_alt</span>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* Main 2-Column Feed */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <section className="lg:col-span-8 flex flex-col space-y-4">
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-semibold text-[#111827]">Chronological Interventions</h2>
+                  <span className="px-2 py-0.5 text-[11px] font-medium bg-[#F9FAFB] text-[#6B7280] border border-[#E5E7EB] rounded">
+                    {filteredRecords.length} {filteredRecords.length === 1 ? 'entry' : 'entries'}
+                  </span>
+                </div>
+                <span className="text-[12px] text-[#6B7280]">Auto-refresh: 10s</span>
+              </div>
+
+              {filteredRecords.map(item => (
+                <article key={item.id} className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-5 flex flex-col gap-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-[#E5E7EB]">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${
+                        item.severity === 'CRITICAL' ? 'bg-[#DC2626]' : item.severity === 'WARNING' ? 'bg-[#D97706]' : 'bg-[#2563EB]'
+                      }`}></span>
+                      <span className={`text-xs font-semibold uppercase tracking-wide ${
+                        item.severity === 'CRITICAL' ? 'text-[#DC2626]' : item.severity === 'WARNING' ? 'text-[#D97706]' : 'text-[#2563EB]'
+                      }`}>
+                        {item.severity}
+                      </span>
+                      <span className="text-gray-300">·</span>
+                      <span className="text-xs text-[#6B7280] font-mono tabular-nums">{item.id}</span>
+                      <span className="text-gray-300">·</span>
+                      <span className="text-xs text-[#6B7280] tabular-nums">{item.time}</span>
+                    </div>
+                    <div className={`flex items-center gap-1.5 text-xs font-medium ${
+                      item.status === 'OVERRIDDEN' ? 'text-[#D97706]' : 'text-[#059669]'
+                    }`}>
+                      <span className="material-symbols-outlined text-[15px]">
+                        {item.status === 'OVERRIDDEN' ? 'edit_note' : 'done_all'}
+                      </span>
+                      {item.statusLabel}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                    <div>
+                      <span className="text-[12px] text-[#6B7280] block">Target Zone</span>
+                      <span className="font-medium text-[#111827] block mt-0.5">{item.targetZone}</span>
+                      <span className="text-[12px] text-[#6B7280]">{item.subZone}</span>
+                    </div>
+                    <div>
+                      <span className="text-[12px] text-[#6B7280] block">Algorithm Forecast</span>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className={`font-semibold tabular-nums ${item.severity === 'CRITICAL' ? 'text-[#DC2626]' : 'text-[#111827]'}`}>
+                          {item.forecast}
+                        </span>
+                        <span className="text-[#6B7280]">{item.forecastSub}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-[12px] text-[#6B7280] block">Logged Operator</span>
+                      <span className="font-medium text-[#111827] block mt-0.5">{item.operator}</span>
+                      <span className="text-[12px] text-[#6B7280]">{item.operatorRole}</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                    <div className="p-3 bg-white border border-[#E5E7EB] rounded-lg">
+                      <span className="text-[12px] text-[#6B7280] font-medium block mb-1 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[14px]">smart_toy</span>
+                        Algorithmic Directive
+                      </span>
+                      <p className="text-[#111827] leading-relaxed">
+                        {item.directive}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-white border border-[#E5E7EB] rounded-lg">
+                      <span className="text-[12px] text-[#6B7280] font-medium block mb-1 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[14px]">shield_person</span>
+                        Commander Action Taken
+                      </span>
+                      <p className="text-[#111827] leading-relaxed font-medium">
+                        {item.actionTaken}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-t border-[#E5E7EB] text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[#059669] text-[16px]">check_circle</span>
+                      <span className="text-[#111827]">{item.resolution}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 bg-white border border-[#E5E7EB] rounded text-[11px] text-[#6B7280]">{item.tag}</span>
+                      <button 
+                        onClick={() => onShowToast('Telemetry Synced', `Live telemetry node mapped for ${item.id}`)}
+                        className="text-[#2563EB] hover:underline inline-flex items-center gap-0.5 font-medium text-xs"
+                      >
+                        Telemetry <span className="material-symbols-outlined text-[13px]">open_in_new</span>
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </section>
+
+            {/* Sidebar Column */}
+            <section className="lg:col-span-4 flex flex-col space-y-6">
+              <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-5 flex flex-col gap-4">
+                <div className="flex items-center justify-between pb-3 border-b border-[#E5E7EB]">
+                  <h3 className="text-sm font-semibold text-[#111827] flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[18px] text-[#6B7280]">query_stats</span>
+                    Compliance & Overrides
+                  </h3>
+                  <span className="text-[11px] font-medium text-[#2563EB]">Realtime Audit</span>
+                </div>
+                <div>
+                  <div className="flex justify-between items-baseline mb-2">
+                    <span className="text-xs text-[#6B7280]">Algorithm Adherence</span>
+                    <span className="text-xs font-semibold text-[#111827] tabular-nums">73.7% (14/19)</span>
+                  </div>
+                  <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden flex">
+                    <div className="bg-[#2563EB] h-full" style={{ width: '74%' }}></div>
+                    <div className="bg-gray-300 h-full" style={{ width: '26%' }}></div>
+                  </div>
+                  <div className="flex justify-between items-center mt-1.5 text-[11px] text-[#6B7280] tabular-nums">
+                    <span>Direct Executions (14)</span>
+                    <span>Manual Overrides (5)</span>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-white border border-[#E5E7EB] rounded-lg text-xs">
+                  <span className="text-[11px] text-[#6B7280] block font-medium">Primary Reason for Override</span>
+                  <div className="text-xs font-semibold text-[#111827] mt-0.5">Physical Ingress Capacity Buffer Exceeded</div>
+                  <p className="text-[12px] text-[#6B7280] mt-1 leading-normal">
+                    Commander human intuition accounted for rapid transit bunching not yet factored into algorithmic gate release timers.
+                  </p>
+                </div>
+
+                <div className="space-y-2.5 pt-1">
+                  <span className="text-[12px] text-[#6B7280] block font-medium">Interventions by Sector</span>
+                  <div className="space-y-2 text-xs">
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-[#111827]">Entry C / Perimeter East</span>
+                        <span className="font-medium text-[#DC2626] tabular-nums">8</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div className="bg-[#DC2626] h-full" style={{ width: '65%' }}></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-[#111827]">Central Arena</span>
+                        <span className="font-medium text-[#111827] tabular-nums">6</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div className="bg-[#2563EB] h-full" style={{ width: '45%' }}></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-[#111827]">Entry A (North Entrance)</span>
+                        <span className="font-medium text-[#111827] tabular-nums">3</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div className="bg-gray-400 h-full" style={{ width: '25%' }}></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-[#111827]">Food & Retail</span>
+                        <span className="font-medium text-[#111827] tabular-nums">2</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div className="bg-gray-300 h-full" style={{ width: '15%' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cam Visuals */}
+              <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-5 flex flex-col gap-4">
+                <div className="flex items-center justify-between pb-3 border-b border-[#E5E7EB]">
+                  <h3 className="text-sm font-semibold text-[#111827] flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[18px] text-[#6B7280]">videocam</span>
+                    Audit Cam Visuals
+                  </h3>
+                  <span className="text-[11px] text-[#6B7280]">Snapshot Archive</span>
+                </div>
+                <div className="space-y-3">
+                  <div className="border border-[#E5E7EB] rounded-lg overflow-hidden bg-white">
+                    <img 
+                      alt="Monochrome surveillance security footage" 
+                      className="w-full h-32 object-cover" 
+                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuD62y6aYZcWzAQP4x9xlEif_eSIbAmvaUlqvOInJfcNrx-Dy7ezzy8zrZfpyk_bfyc5FvPpiw1EffjRZzOH2rEFzE-1le5W1UVVF7YaBJWoFxvauqF8xefffquAajMJO28RWP-xWqfZ0ZUKLPrmYM6SW2XqT0z2huGFxtvMKVkslNGluQfBGhzB_osw9lsaJTHqJ5Hh3XmF5UAph3iAa_FhrpYt1I2kwYwg-i0ig6selE5OwKfvfg6h"
+                    />
+                    <div className="p-2.5 flex items-center justify-between text-xs">
+                      <span className="font-medium text-[#111827]">CAM-E3-NORTH (Entry C)</span>
+                      <span className="text-[#059669] font-medium text-[11px]">Post-Action Clear</span>
+                    </div>
+                  </div>
+                  <div className="border border-[#E5E7EB] rounded-lg overflow-hidden bg-white">
+                    <img 
+                      alt="Overhead security camera feed" 
+                      className="w-full h-32 object-cover" 
+                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuCB0gNPOJdliEt_9NBE4RipnmpSZqPdi705fgNuexY8S45mZKT4JjmgojUS0qYlu6iFNTUNPoo2e_iMtXk_tfOZ7TLjq0-YjWntyYd_VlcnPsMFHY2vAsxj-y1QcDqKvYnqu8VlSRCOqz-I1yDRHbHaLidm4g-BQu-W4zT1Nf_4Z68RNc5aTXBxuUQIx8h_1ADvaPdDwj-qPnmm50HAv2GWiFRHK29sak4j0sQXvpu5wXOo0qrTfwdI"
+                    />
+                    <div className="p-2.5 flex items-center justify-between text-xs">
+                      <span className="font-medium text-[#111827]">CAM-MS-EAST (Central Arena)</span>
+                      <span className="text-[#2563EB] font-medium text-[11px]">Wave Dampening Active</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Handover Card */}
+              <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-5 flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[#2563EB] text-[18px]">assignment_turned_in</span>
+                  <h3 className="text-sm font-semibold text-[#111827]">Shift Commander Transfer</h3>
+                </div>
+                <p className="text-xs text-[#6B7280] leading-normal">
+                  Ready to commit current decision log state to immutable event audit? The incoming shift commander must digitally countersign.
+                </p>
+                <div className="p-2.5 bg-white border border-[#E5E7EB] rounded-lg text-xs">
+                  <span className="text-[11px] text-[#6B7280] block">Pending Sign-off:</span>
+                  <span className="font-medium text-[#111827] mt-0.5 block">Commander K. Lindqvist (Shift 3)</span>
+                </div>
+                <button 
+                  onClick={() => setBriefingOpen(true)}
+                  className="w-full py-2.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-2 mt-1"
+                >
+                  <span className="material-symbols-outlined text-[16px]">lock</span>
+                  Lock & Transmit Shift Ledger
+                </button>
+              </div>
+            </section>
+          </div>
+
+          {/* Briefing Modal */}
+          {briefingOpen && (
+            <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+              <div className="bg-white border border-[#E5E7EB] rounded-lg w-full max-w-xl max-h-[921px] flex flex-col overflow-hidden">
+                <div className="p-4 border-b border-[#E5E7EB] flex items-center justify-between">
+                  <h2 className="text-sm font-semibold text-[#111827] flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[#2563EB] text-[18px]">badge</span>
+                    Operational Handover Briefing
+                  </h2>
+                  <button onClick={() => setBriefingOpen(false)} className="text-[#6B7280] hover:text-[#111827]">
+                    <span className="material-symbols-outlined text-[18px]">close</span>
+                  </button>
+                </div>
+                <div className="p-5 overflow-y-auto space-y-4 text-xs">
+                  <div className="p-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg">
+                    <span className="font-medium text-[#111827] block">Shift 2 Summary · Regional Venue Operations</span>
+                    <span className="text-[#6B7280] text-[12px] block mt-0.5">Lead: Vance, R. · 14:00 - 22:00 CEST · Incidents Resolved: 19</span>
+                  </div>
+                  <div className="space-y-2">
+                    <span className="font-medium text-[#111827] block">Critical Watchpoints For Incoming Shift:</span>
+                    <ul className="list-disc pl-5 space-y-1.5 text-[#6B7280] text-xs">
+                      <li><strong>Entry C Bypass Lane:</strong> Kept open on manual override; turnstiles C1–C3 require recalibration before 23:00 curfew.</li>
+                      <li><strong>Central Arena Crowd Density:</strong> Surge anticipated at 22:30 headline finale; keep acoustic dampening presets armed.</li>
+                      <li><strong>Transit Loop North:</strong> 12 city buses lined for egress surge starting 22:15. Dispatch queue marshal team Delta.</li>
+                    </ul>
+                  </div>
+                  <div className="border-t border-[#E5E7EB] pt-3 space-y-2">
+                    <span className="font-medium text-[#111827] block">Commander Attestation:</span>
+                    <div className="p-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg">
+                      <p className="text-[#6B7280] text-[12px] leading-relaxed">
+                        "I hereby attest all 19 recorded interventions represent accurate tactical actions. No perimeter breeches or injuries recorded during shift."
+                      </p>
+                      <div className="mt-2.5 flex items-center justify-between text-[11px] text-[#6B7280] tabular-nums">
+                        <span>Signature: SHA-256 (67f8...93b1)</span>
+                        <span>21:42:15 CEST</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-4 bg-[#F9FAFB] border-t border-[#E5E7EB] flex items-center justify-end gap-2">
+                  <button 
+                    onClick={() => setBriefingOpen(false)}
+                    className="px-3.5 py-2 bg-white hover:bg-gray-100 text-[#111827] border border-[#E5E7EB] rounded-lg text-xs font-medium transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setBriefingOpen(false);
+                      onShowToast('Transfer Authorized', 'Ledger signed and assigned to Commander Lindqvist, K.');
+                    }}
+                    className="px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-lg text-xs font-medium transition-colors"
+                  >
+                    Authorize Transfer to Lindqvist, K.
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </main>
+      );
+    };
+
+    // ==========================================
+    // SCREEN 2: LIVE CROWD MAP COMPONENT
+    // ==========================================
+    // Venue-agnostic forecast model (mock AI prediction). Density and flow
+    // values shift per temporal horizon to simulate the forward projection
+    // (CAMARA Device Status + Quality on Demand trigger at >90% density).
+    const GRID_CELLS = [
+      { id: 'A1', name: 'Perimeter N-W', tone: 'plain' },
+      { id: 'A2', name: 'Entry A (North)', tone: 'light', metric: true, pill: true },
+      { id: 'A3', name: 'North Lawn', tone: 'plain' },
+      { id: 'A4', name: 'Staff Hub', tone: 'plain' },
+      { id: 'A5', name: 'Logistics Bay', tone: 'plain' },
+      { id: 'A6', name: 'Parking Sec-N', tone: 'plain' },
+      { id: 'B1', name: 'West Exposure', tone: 'plain' },
+      { id: 'B2', name: 'Refreshment Terrace W', tone: 'light' },
+      { id: 'B3', name: 'Medical Alpha', tone: 'plain', triage: true },
+      { id: 'B4', name: 'Arena Runway', tone: 'medium' },
+      { id: 'B5', name: 'VIP Deck 1', tone: 'light' },
+      { id: 'B6', name: 'Entry B (VIP)', tone: 'plain', note: 'Flow normal', nameDark: true },
+      { id: 'C1', name: 'Retail Plaza W', tone: 'plain' },
+      { id: 'C2', name: 'AV Tower 01', tone: 'light' },
+      { id: 'C3', name: 'Central Arena Pit', tone: 'dark', metric: true },
+      { id: 'C4', name: 'East Lawn', tone: 'medium' },
+      { id: 'C5', name: 'VIP Deck 2', tone: 'light' },
+      { id: 'C6', name: 'Perimeter E', tone: 'plain' },
+      { id: 'D1', name: 'Rest Area West', tone: 'plain' },
+      { id: 'D2', name: 'Food & Retail', tone: 'light', note: '18 stalls open' },
+      { id: 'D3', name: 'Central Corridor', tone: 'medium' },
+      { id: 'D4', name: 'Sponsor Booths', tone: 'light' },
+      { id: 'D5', name: 'Restrooms E', tone: 'plain' },
+      { id: 'D6', name: 'Production Base', tone: 'plain' },
+      { id: 'E1', name: 'S-W Buffer', tone: 'plain' },
+      { id: 'E2', name: 'Queue Chute W', tone: 'light' },
+      { id: 'E3', name: 'Transit Hub C', tone: 'dark', metric: true, icon: 'train' },
+      { id: 'E4', name: 'South Plaza', tone: 'medium' },
+      { id: 'E5', name: 'Info & Lost', tone: 'plain' },
+      { id: 'E6', name: 'Rideshare / Taxi', tone: 'plain' }
+    ];
+
+    // Density (%) per horizon per cell. '30' reproduces the original mock values.
+    const HORIZON_DENSITY = {
+      now:  { A1:30, A2:69, A3:41, A4:37, A5:26, A6:18, B1:50, B2:66, B4:80, B5:71, B6:59,
+              C1:45, C2:73, C3:91, C4:87, C5:75, C6:34, D1:39, D2:74, D3:84, D4:66, D5:48, D6:21,
+              E1:27, E2:60, E3:92, E4:78, E5:41, E6:14 },
+      '30': { A1:32, A2:71, A3:44, A4:39, A5:28, A6:19, B1:52, B2:68, B4:84, B5:74, B6:62,
+              C1:48, C2:76, C3:96, C4:93, C5:79, C6:36, D1:41, D2:78, D3:88, D4:69, D5:51, D6:22,
+              E1:29, E2:63, E3:98, E4:81, E5:43, E6:15 },
+      '60': { A1:36, A2:78, A3:49, A4:44, A5:32, A6:21, B1:57, B2:74, B4:90, B5:81, B6:69,
+              C1:53, C2:84, C3:99, C4:97, C5:86, C6:41, D1:46, D2:86, D3:94, D4:76, D5:56, D6:24,
+              E1:32, E2:70, E3:96, E4:88, E5:48, E6:17 },
+      '90': { A1:38, A2:80, A3:52, A4:47, A5:34, A6:22, B1:60, B2:77, B4:92, B5:84, B6:72,
+              C1:56, C2:87, C3:95, C4:96, C5:89, C6:44, D1:49, D2:89, D3:93, D4:79, D5:59, D6:26,
+              E1:34, E2:73, E3:91, E4:90, E5:51, E6:18 }
+    };
+
+    // Per-horizon secondary metrics for the choke-point cells.
+    const HORIZON_METRIC = {
+      now:  { A2: '82 ppl/min',  C3: '4.7 ppl/m²', E3: '+196 ppl/min' },
+      '30': { A2: '88 ppl/min',  C3: '5.1 ppl/m²', E3: '+224 ppl/min' },
+      '60': { A2: '96 ppl/min',  C3: '5.6 ppl/m²', E3: '+261 ppl/min' },
+      '90': { A2: '101 ppl/min', C3: '5.4 ppl/m²', E3: '+238 ppl/min' }
+    };
+
+    // Per-horizon site KPIs.
+    const HORIZON_KPI = {
+      now:  { inVenue: '47,180', capacity: '90.7%', inflow: '+298', speed: '1.5' },
+      '30': { inVenue: '48,210', capacity: '92.7%', inflow: '+312', speed: '1.4' },
+      '60': { inVenue: '49,840', capacity: '95.9%', inflow: '+386', speed: '1.2' },
+      '90': { inVenue: '51,020', capacity: '98.1%', inflow: '+421', speed: '1.0' }
+    };
+
+    // Per-horizon model confidence.
+    const HORIZON_CONFIDENCE = { now: '94.2%', '30': '91.8%', '60': '87.4%', '90': '82.1%' };
+
+    // Forecast banner copy (shown for the +30/+60 horizons).
+    const HORIZON_BANNER = {
+      '30': { title: 'Predicted Choke: Transit Hub C (E3) to Central Arena (C3)', detail: '· Surge of +1,850 arrivals inbound from transit concourse', eta: 'ETA: ~18 min' },
+      '60': { title: 'Predicted Choke: Transit Hub C (E3) to Central Arena (C3)', detail: '· Surge of +2,940 arrivals sustained across concourse', eta: 'ETA: ~44 min' }
+    };
+
+    // Visual tone classes per cell (kept fixed so the default view is identical
+    // to the original mock; only the density/metric numbers shift per horizon).
+    const TONE_CLASSES = {
+      plain:  { box: 'bg-white border-[#E5E7EB]', id: 'text-[#6B7280]', pct: 'text-[#6B7280]', name: 'text-[11px] text-[#6B7280]', nameRich: 'text-[12px] font-medium text-[#111827]' },
+      light:  { box: 'bg-[#DBEAFE] border-[#BFDBFE]', id: 'text-[#1E40AF]', pct: 'text-[#1E40AF]', name: 'text-[11px] text-[#1E3A8A]', nameRich: 'text-[12px] font-medium text-[#1E3A8A]', pill: 'bg-[#EFF6FF] text-[#1E40AF] font-medium' },
+      medium: { box: 'bg-[#93C5FD] border-[#60A5FA]', id: 'text-[#1E3A8A]', name: 'text-[11px] font-medium text-[#1E3A8A]', nameRich: 'text-[11px] font-medium text-[#1E3A8A]', pill: 'bg-white text-[#1E3A8A] font-medium' },
+      dark:   { box: 'bg-[#2563EB] text-white', id: 'text-white', name: 'text-[12px] font-medium text-white', nameRich: 'text-[12px] font-medium text-white', pill: 'bg-white text-[#2563EB] font-bold' }
+    };
+
+    const LiveCrowdMapScreen = ({ onShowToast }) => {
+      const navigate = useNavigate();
+      const [horizon, setHorizon] = useState('30');
+      const [layers, setLayers] = useState({ heat: true, vectors: true, evac: false });
+      const [selectedZone, setSelectedZone] = useState('E3');
+      const [interceptModalOpen, setInterceptModalOpen] = useState(false);
+
+      const zoneDatabase = {
+        'E3': {
+          name: 'Transit Hub C (South)',
+          tag: 'ZONE E3',
+          status: 'Warning',
+          isWarning: true,
+          predDensity: '96%',
+          timeToChoke: 'ETA: +18 min',
+          chokeFactor: '4.8 ppl/m²',
+          risk: 'Severity 4 (High)',
+          factors: {
+            arrivals: '3 Trains / 12 min',
+            velocity: '224 ppl/min (↑ 38%)',
+            downstream: 'Central Corridor D3'
+          }
+        },
+        'C3': {
+          name: 'Central Arena Pit',
+          tag: 'ZONE C3',
+          status: 'Critical',
+          isWarning: true,
+          predDensity: '98%',
+          timeToChoke: 'Active Capacity',
+          chokeFactor: '5.1 ppl/m²',
+          risk: 'Severity 5 (Max)',
+          factors: {
+            arrivals: 'Headline event in progress',
+            velocity: 'Static high density',
+            downstream: 'Corridor C2/C4 locked'
+          }
+        },
+        'A2': {
+          name: 'Entry A (North Transit)',
+          tag: 'ZONE A2',
+          status: 'Controlled',
+          isWarning: false,
+          predDensity: '71%',
+          timeToChoke: 'Nominal',
+          chokeFactor: '2.1 ppl/m²',
+          risk: 'Severity 1 (Normal)',
+          factors: {
+            arrivals: 'Bus Shuttles Steady',
+            velocity: '88 ppl/min',
+            downstream: 'North Lawn Open'
+          }
+        },
+        'B3': {
+          name: 'Medical Station Alpha',
+          tag: 'ZONE B3',
+          status: 'Operational',
+          isWarning: false,
+          predDensity: '54%',
+          timeToChoke: 'Nominal',
+          chokeFactor: '1.4 ppl/m²',
+          risk: 'Severity 0 (Nominal)',
+          factors: {
+            arrivals: '4 Triage Beds Ready',
+            velocity: 'Ambulance Lane Free',
+            downstream: 'Perimeter West Open'
+          }
+        },
+        'D2': {
+          name: 'Food & Retail',
+          tag: 'ZONE D2',
+          status: 'Heavy Footfall',
+          isWarning: false,
+          predDensity: '78%',
+          timeToChoke: 'Queue Stacking',
+          chokeFactor: '3.2 ppl/m²',
+          risk: 'Severity 2 (Moderate)',
+          factors: {
+            arrivals: '18 Food Trucks Operational',
+            velocity: '140 ppl/min dwell',
+            downstream: 'Hydration queue: 10m'
+          }
+        },
+        'B6': {
+          name: 'Entry B (VIP & East)',
+          tag: 'ZONE B6',
+          status: 'Optimal',
+          isWarning: false,
+          predDensity: '62%',
+          timeToChoke: 'Clear',
+          chokeFactor: '1.9 ppl/m²',
+          risk: 'Severity 1 (Optimal)',
+          factors: {
+            arrivals: 'VIP Shuttle Flow',
+            velocity: '64 ppl/min',
+            downstream: 'Lounge Deck Fluid'
+          }
+        }
+      };
+
+      const baseZone = zoneDatabase[selectedZone] || {
+        name: `Tactical Sector ${selectedZone}`,
+        tag: `ZONE ${selectedZone}`,
+        status: 'Monitoring',
+        chokeFactor: '2.4 ppl/m²',
+        risk: 'Severity 1 (Normal)',
+        factors: {
+          arrivals: 'Nominal Inflow',
+          velocity: '110 ppl/min',
+          downstream: 'Clear egress'
+        }
+      };
+
+      // Horizon-aware overlay: predicted density and choke ETA come from the
+      // forecast model, so the inspector shifts as the operator scrubs time.
+      // Cells without a density reading (e.g. medical/triage) keep their base text.
+      const zoneDensity = HORIZON_DENSITY[horizon][selectedZone];
+      const zoneMetric = HORIZON_METRIC[horizon][selectedZone] || '';
+      const overThreshold = zoneDensity != null && zoneDensity >= 90;
+      // Site-wide check: does any sector cross the QoD trigger threshold this horizon?
+      const overSectors = GRID_CELLS.filter(cell => {
+        const d = HORIZON_DENSITY[horizon][cell.id];
+        return d != null && d >= 90;
+      });
+      const anyOverThreshold = overSectors.length > 0;
+      const currentZone = {
+        ...baseZone,
+        predDensity: zoneDensity != null ? `${zoneDensity}%` : baseZone.predDensity,
+        timeToChoke: overThreshold ? (horizon === 'now' ? 'Active Capacity' : `ETA: +${horizon} min`) : (zoneDensity != null ? 'Nominal' : baseZone.timeToChoke),
+        isWarning: zoneDensity != null && zoneDensity >= 75,
+        status: overThreshold ? 'Critical' : (zoneDensity != null && zoneDensity >= 75 ? 'Warning' : baseZone.status),
+        factors: {
+          ...baseZone.factors,
+          velocity: zoneMetric ? `${zoneMetric} (inflow)` : baseZone.factors.velocity
+        }
+      };
+
+      const toggleLayer = (layerKey) => {
+        setLayers(prev => ({ ...prev, [layerKey]: !prev[layerKey] }));
+      };
+
+      return (
+        <div className="flex-1 flex flex-col">
+          {/* Sub-Toolbar */}
+          <div className="bg-white border-b border-[#E5E7EB]">
+            <div className="max-w-[1720px] mx-auto px-6 py-3 flex flex-wrap items-center justify-between gap-4">
+              {/* Horizon Selector */}
+              <div className="flex items-center gap-3">
+                <span className="text-[12px] text-[#6B7280] font-medium">Temporal Horizon:</span>
+                <div className="inline-flex bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-0.5">
+                  {[
+                    { id: 'now', label: 'Now', time: '[21:42]' },
+                    { id: '30', label: '+30 min', time: '[22:12]' },
+                    { id: '60', label: '+60 min', time: '[22:42]' },
+                    { id: '90', label: '+90 min', time: '[23:12]' }
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setHorizon(tab.id)}
+                      className={`px-3 py-1 rounded-[6px] text-[13px] font-medium transition-colors ${
+                        horizon === tab.id 
+                          ? 'bg-[#2563EB] text-white' 
+                          : 'text-[#6B7280] hover:text-[#111827]'
+                      }`}
+                    >
+                      {tab.label} <span className="text-[11px] tabular-nums opacity-80">{tab.time}</span>
+                    </button>
+                  ))}
+                </div>
+                <span className="text-[12px] text-[#6B7280] hidden lg:inline tabular-nums">
+                  Confidence: <span className="font-medium text-[#111827]">{HORIZON_CONFIDENCE[horizon]}</span>
+                </span>
+              </div>
+
+              {/* Layer Toggles & Action */}
+              <div className="flex items-center gap-2">
+                <div className="inline-flex bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-0.5">
+                  <button 
+                    onClick={() => toggleLayer('heat')}
+                    className={`px-2.5 py-1 rounded-[6px] text-[12px] font-medium flex items-center gap-1.5 transition-colors ${
+                      layers.heat ? 'bg-white border border-[#E5E7EB] text-[#111827]' : 'text-[#6B7280]'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[15px] text-[#2563EB]">grid_view</span> Heatmap
+                  </button>
+                  <button 
+                    onClick={() => toggleLayer('vectors')}
+                    className={`px-2.5 py-1 rounded-[6px] text-[12px] font-medium flex items-center gap-1.5 transition-colors ${
+                      layers.vectors ? 'bg-white border border-[#E5E7EB] text-[#111827]' : 'text-[#6B7280]'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[15px] text-[#2563EB]">trending_up</span> Flow Vectors
+                  </button>
+                  <button 
+                    onClick={() => toggleLayer('evac')}
+                    className={`px-2.5 py-1 rounded-[6px] text-[12px] font-medium flex items-center gap-1.5 transition-colors ${
+                      layers.evac ? 'bg-white border border-[#E5E7EB] text-[#111827]' : 'text-[#6B7280]'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[15px]">emergency</span> Evac Routes
+                  </button>
+                </div>
+
+                <button 
+                  onClick={() => {
+                    setSelectedZone('E3');
+                    setHorizon('30');
+                    setLayers({ heat: true, vectors: true, evac: false });
+                    onShowToast('Grid Reset', 'Tactical view restored to primary choke point.');
+                  }}
+                  className="px-2.5 py-1.5 rounded-lg border border-[#E5E7EB] bg-white hover:bg-[#F9FAFB] text-[12px] text-[#6B7280] hover:text-[#111827] flex items-center gap-1"
+                >
+                  <span className="material-symbols-outlined text-[16px]">restart_alt</span> Reset
+                </button>
+                <button 
+                  onClick={() => setInterceptModalOpen(true)}
+                  className="px-3.5 py-1.5 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[13px] font-medium flex items-center gap-1.5 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[16px]">campaign</span> Sector Intercept
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Calm Forecast Banner */}
+          {(horizon === '30' || horizon === '60') && (
+            <div className="bg-[#EFF6FF] border-b border-[#DBEAFE] px-6 py-2">
+              <div className="max-w-[1720px] mx-auto flex items-center justify-between flex-wrap gap-2 text-[13px]">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#DC2626]"></span>
+                  <span className="font-medium text-[#1E3A8A]">{HORIZON_BANNER[horizon].title}</span>
+                  <span className="text-[#475569] text-[12px] hidden md:inline">{HORIZON_BANNER[horizon].detail}</span>
+                </div>
+                <div className="flex items-center gap-3 text-[12px]">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#FFF7ED] border border-[#FED7AA] text-[#C2410C] font-medium">
+                    <span className="material-symbols-outlined text-[14px]">cell_tower</span>
+                    QoD auto-engaged
+                  </span>
+                  <span className="text-[#1E3A8A] font-medium tabular-nums">{HORIZON_BANNER[horizon].eta}</span>
+                  <button 
+                    onClick={() => setSelectedZone('E3')}
+                    className="text-[#2563EB] hover:underline font-medium"
+                  >
+                    Focus Zone E3 →
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Main Layout Surface */}
+          <main className="max-w-[1720px] mx-auto w-full p-6 flex-1 flex flex-col">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 items-start">
+              {/* Map Canvas (8 of 12 cols = ~66%) */}
+              <div className="lg:col-span-8 flex flex-col gap-4">
+                <div className="bg-white border border-[#E5E7EB] rounded-lg p-5 flex flex-col">
+                  {/* Matrix Header & Legend */}
+                  <div className="flex flex-wrap items-center justify-between pb-4 mb-4 border-b border-[#E5E7EB] gap-3">
+                    <div className="flex items-center gap-3">
+                      <h1 className="text-[20px] font-semibold text-[#111827]">Tactical Grid Sector A1–E6</h1>
+                      <span className="text-[12px] text-[#6B7280]">50m Cellular Aggregation</span>
+                    </div>
+                    <div className="flex items-center gap-4 text-[12px] text-[#6B7280]">
+                      <span className="text-[11px] font-medium uppercase tracking-wider text-[#9CA3AF]">Density:</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-3 h-3 rounded-[3px] bg-[#F1F5F9] border border-[#E2E8F0]"></span>
+                        <span>&lt;50%</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-3 h-3 rounded-[3px] bg-[#DBEAFE] border border-[#BFDBFE]"></span>
+                        <span>50–75%</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-3 h-3 rounded-[3px] bg-[#93C5FD] border border-[#60A5FA]"></span>
+                        <span>75–90%</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-3 h-3 rounded-[3px] bg-[#2563EB]"></span>
+                        <span className="font-medium text-[#111827]">&gt;90% (High)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Network QoD status (CAMARA Quality on Demand) */}
+                  <div className={`flex flex-wrap items-center justify-between gap-2 mb-4 px-3.5 py-2.5 rounded-lg border ${anyOverThreshold ? 'border-[#F59E0B] bg-[#FFFBEB]' : 'border-[#E5E7EB] bg-[#F9FAFB]'}`}>
+                    <div className="flex items-center gap-2.5">
+                      <span className="relative flex h-2.5 w-2.5">
+                        {anyOverThreshold && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#F59E0B] opacity-60"></span>}
+                        <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${anyOverThreshold ? 'bg-[#F59E0B]' : 'bg-[#059669]'}`}></span>
+                      </span>
+                      <span className={`text-[13px] font-semibold ${anyOverThreshold ? 'text-[#B45309]' : 'text-[#111827]'}`}>
+                        Network QoD {anyOverThreshold ? 'ENGAGED' : 'Standby'}
+                      </span>
+                      <span className="material-symbols-outlined text-[16px] text-[#6B7280]">cell_tower</span>
+                    </div>
+                    <span className={`text-[12px] tabular-nums ${anyOverThreshold ? 'text-[#B45309] font-medium' : 'text-[#6B7280]'}`}>
+                      {anyOverThreshold
+                        ? `Low-latency slice reserved · ${overSectors.length} sector${overSectors.length === 1 ? '' : 's'} above 90%`
+                        : 'Auto-engages at ≥90% predicted density'}
+                    </span>
+                  </div>
+
+                  {/* Telemetry Strip */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                    <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-3">
+                      <div className="text-[12px] text-[#6B7280]">Active In-Venue</div>
+                      <div className="text-[18px] font-semibold text-[#111827] tabular-nums mt-0.5">{HORIZON_KPI[horizon].inVenue} <span className="text-[12px] text-[#6B7280] font-normal">/ 52,000</span></div>
+                    </div>
+                    <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-3">
+                      <div className="text-[12px] text-[#6B7280]">Capacity Utilized</div>
+                      <div className="text-[18px] font-semibold text-[#111827] tabular-nums mt-0.5">{HORIZON_KPI[horizon].capacity}</div>
+                    </div>
+                    <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-3">
+                      <div className="text-[12px] text-[#6B7280]">Net Inflow Rate</div>
+                      <div className="text-[18px] font-semibold text-[#2563EB] tabular-nums mt-0.5">{HORIZON_KPI[horizon].inflow} <span className="text-[12px] font-normal text-[#6B7280]">ppl/min</span></div>
+                    </div>
+                    <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-3">
+                      <div className="text-[12px] text-[#6B7280]">Average Flow Speed</div>
+                      <div className="text-[18px] font-semibold text-[#111827] tabular-nums mt-0.5">{HORIZON_KPI[horizon].speed} <span className="text-[12px] font-normal text-[#6B7280]">m/s</span></div>
+                    </div>
+                  </div>
+
+                  {/* Interactive Cell Grid */}
+                  <div className="relative w-full rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] overflow-hidden p-2">
+                    {/* SVG Flow layer */}
+                    <svg className="absolute inset-0 w-full h-full pointer-events-none z-20" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <marker id="arrow-blue" markerHeight="6" markerWidth="6" orient="auto" refX="5" refY="3">
+                          <polygon fill="#2563EB" points="0 0, 6 3, 0 6"></polygon>
+                        </marker>
+                        <marker id="arrow-gray" markerHeight="6" markerWidth="6" orient="auto" refX="5" refY="3">
+                          <polygon fill="#9CA3AF" points="0 0, 6 3, 0 6"></polygon>
+                        </marker>
+                      </defs>
+                      {layers.vectors && (
+                        <g className="transition-opacity duration-300">
+                          <path d="M 42% 82% C 42% 64%, 42% 60%, 42% 48%" fill="none" markerEnd="url(#arrow-blue)" stroke="#2563EB" strokeDasharray="6 4" strokeWidth="2.5"></path>
+                          <path d="M 44% 82% C 52% 70%, 55% 62%, 58% 48%" fill="none" markerEnd="url(#arrow-blue)" stroke="#2563EB" strokeDasharray="4 4" strokeWidth="1.5"></path>
+                        </g>
+                      )}
+                      {layers.evac && (
+                        <g className="transition-opacity duration-300">
+                          <path d="M 25% 15% L 10% 15%" fill="none" markerEnd="url(#arrow-gray)" stroke="#059669" strokeDasharray="4 4" strokeWidth="1.5"></path>
+                        </g>
+                      )}
+                    </svg>
+
+                    <div className="grid grid-cols-6 gap-2 mb-2 text-center text-[11px] font-medium text-[#6B7280]">
+                      <div>COL 1</div><div>COL 2</div><div>COL 3</div><div>COL 4</div><div>COL 5</div><div>COL 6</div>
+                    </div>
+
+                    <div className="grid grid-cols-6 grid-rows-5 gap-2 relative z-10 text-[12px]">
+                      {GRID_CELLS.map((cell) => {
+                        const density = HORIZON_DENSITY[horizon][cell.id] || 0;
+                        const tone = TONE_CLASSES[cell.tone];
+                        const selected = selectedZone === cell.id;
+                        const rich = cell.metric || cell.note || cell.icon;
+                        const nameCls = rich ? tone.nameRich : tone.name;
+                        const metric = cell.metric ? HORIZON_METRIC[horizon][cell.id] : null;
+                        const ringCls = selected
+                          ? (cell.tone === 'dark' ? 'ring-2 ring-offset-2 ring-[#2563EB]' : 'ring-2 ring-[#2563EB]')
+                          : '';
+
+                        if (cell.triage) {
+                          return (
+                            <div key={cell.id} onClick={() => setSelectedZone(cell.id)} className={`cursor-pointer p-2.5 rounded-lg border flex flex-col justify-between h-24 transition-colors ${ringCls} bg-white border-[#E5E7EB]`}>
+                              <div className="flex justify-between items-start"><span className="text-[11px] font-semibold text-[#111827]">{cell.id}</span><span className="text-[11px] text-[#059669] font-medium">Triage</span></div>
+                              <div><div className="text-[12px] font-medium text-[#111827]">{cell.name}</div><div className="text-[11px] text-[#6B7280]">4 beds ready</div></div>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div key={cell.id} onClick={() => setSelectedZone(cell.id)} className={`cursor-pointer p-2.5 rounded-lg ${cell.tone === 'dark' ? '' : 'border '}flex flex-col justify-between h-24 transition-colors ${ringCls} ${tone.box}`}>
+                            <div className="flex justify-between items-start">
+                              <span className={`text-[11px] font-semibold ${tone.id}`}>{cell.id}</span>
+                              {cell.tone === 'plain' || cell.tone === 'light' ? (
+                                <span className={`tabular-nums ${tone.pct}`}>{density}%</span>
+                              ) : (
+                                <span className={`px-1.5 py-0.5 rounded ${tone.pill} text-[11px] tabular-nums`}>{density}%</span>
+                              )}
+                            </div>
+                            <div>
+                              <div className={`${nameCls}${cell.icon ? ' flex items-center gap-1' : ''}`}>
+                                {cell.icon && <span className="material-symbols-outlined text-[14px]">{cell.icon}</span>}
+                                {cell.name}
+                              </div>
+                              {metric && <div className={`text-[11px] ${cell.tone === 'dark' ? 'text-[#DBEAFE]' : 'text-[#60A5FA]'} tabular-nums`}>{metric}</div>}
+                              {cell.note && <div className={`text-[11px] ${cell.nameDark ? 'text-[#059669]' : 'text-[#60A5FA]'}`}>{cell.note}</div>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* GDPR strip */}
+                  <div className="mt-4 p-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[12px] text-[#6B7280]">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[16px] text-[#2563EB]">privacy_tip</span>
+                      <span><strong>Anonymized Mobile Aggregation · Nokia Network as Code (CAMARA Device Status):</strong> Zero PII stored or tracked. Spatial radius: 50m IMSI hash cells.</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[#059669] font-medium">GDPR Article 89 Compliant</span>
+                      <span className="text-[#9CA3AF]">·</span>
+                      <span className="tabular-nums">Latency: 420ms</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Inspector Sidebar (4 of 12 cols = ~34%) */}
+              <aside className="lg:col-span-4 flex flex-col gap-4">
+                <div className="bg-white border border-[#E5E7EB] rounded-lg p-5 flex flex-col gap-5">
+                  <div className="flex flex-col gap-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="px-2 py-0.5 rounded bg-[#2563EB] text-white text-[11px] font-semibold">{currentZone.tag}</span>
+                          <span className={`inline-flex items-center gap-1 text-[12px] ${currentZone.isWarning ? 'text-[#DC2626]' : 'text-[#059669]'} font-medium`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${currentZone.isWarning ? 'bg-[#DC2626]' : 'bg-[#059669]'}`}></span> {currentZone.status}
+                          </span>
+                        </div>
+                        <h2 className="text-[20px] font-semibold text-[#111827]">{currentZone.name}</h2>
+                        <p className="text-[12px] text-[#6B7280]">Telemetry Node Inspection</p>
+                      </div>
+                      <button 
+                        onClick={() => onShowToast('Centered View', `Focus locked onto Sector ${selectedZone}`)}
+                        className="p-1.5 rounded border border-[#E5E7EB] text-[#6B7280] hover:text-[#111827] hover:bg-[#F9FAFB]" 
+                        title="Focus Zone"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">filter_center_focus</span>
+                      </button>
+                    </div>
+
+                    {/* Network QoD — predicted trigger */}
+                    <div className={`flex items-start gap-2.5 px-3 py-2.5 rounded-lg border ${overThreshold ? 'border-[#F59E0B] bg-[#FFFBEB]' : 'border-[#E5E7EB] bg-[#F9FAFB]'}`}>
+                      <span className={`material-symbols-outlined text-[18px] ${overThreshold ? 'text-[#D97706]' : 'text-[#059669]'}`}>cell_tower</span>
+                      <div className="flex-1">
+                        <div className={`text-[12px] font-semibold ${overThreshold ? 'text-[#B45309]' : 'text-[#111827]'}`}>
+                          Network QoD {overThreshold ? 'Engaged' : 'Standby'}
+                        </div>
+                        <p className={`text-[11px] leading-snug mt-0.5 ${overThreshold ? 'text-[#B45309]' : 'text-[#6B7280]'}`}>
+                          {overThreshold
+                            ? 'Low-latency slice reserved via Nokia Network as Code — first-responder comms prioritized.'
+                            : 'Auto-engages when predicted density crosses 90%.'}
+                        </p>
+                      </div>
+                      <span className={`text-[11px] font-medium tabular-nums ${overThreshold ? 'text-[#D97706]' : 'text-[#059669]'}`}>
+                        {overThreshold ? 'ON' : 'ARMED'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-3">
+                        <div className="text-[12px] text-[#6B7280]">Predicted Density</div>
+                        <div className="text-[20px] font-semibold text-[#111827] tabular-nums mt-0.5">{currentZone.predDensity}</div>
+                        <div className={`text-[11px] ${currentZone.isWarning ? 'text-[#DC2626]' : 'text-[#6B7280]'} font-medium mt-0.5`}>
+                          {currentZone.timeToChoke}
+                        </div>
+                      </div>
+                      <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-3">
+                        <div className="text-[12px] text-[#6B7280]">Choke Factor</div>
+                        <div className="text-[20px] font-semibold text-[#111827] tabular-nums mt-0.5">
+                          {currentZone.chokeFactor}
+                        </div>
+                        <div className="text-[11px] text-[#6B7280] mt-0.5">Threshold: 4.0</div>
+                      </div>
+                    </div>
+
+                    {/* Surge Sparkline */}
+                    <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-3">
+                      <div className="flex items-center justify-between text-[12px] mb-2">
+                        <span className="text-[#6B7280] font-medium">Surge Curve (T-0 to T+60)</span>
+                        <span className="text-[#DC2626] font-medium tabular-nums">+23% Surge</span>
+                      </div>
+                      <div className="h-16 w-full">
+                        <svg className="w-full h-full overflow-visible" viewBox="0 0 200 60">
+                          <line stroke="#E5E7EB" strokeDasharray="3 3" strokeWidth="1" x1="0" x2="200" y1="42" y2="42"></line>
+                          <line stroke="#FCA5A5" strokeDasharray="3 3" strokeWidth="1" x1="0" x2="200" y1="20" y2="20"></line>
+                          <path d="M 0 50 Q 40 46 80 38 T 120 22 T 160 14 T 200 10" fill="none" stroke="#2563EB" strokeWidth="2"></path>
+                          <circle cx="120" cy="22" fill="#2563EB" r="3.5" stroke="#FFFFFF" strokeWidth="1.5"></circle>
+                        </svg>
+                      </div>
+                      <div className="flex justify-between text-[11px] text-[#6B7280] tabular-nums mt-1 border-t border-[#E5E7EB] pt-1">
+                        <span>21:42 (Now)</span>
+                        <span className="font-medium text-[#2563EB]">22:12 (+30m)</span>
+                        <span>22:42 (+60m)</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-3 space-y-2 text-[12px]">
+                      <div className="font-medium text-[#111827]">Telemetric Breakdown</div>
+                      <div className="flex justify-between text-[#6B7280]">
+                        <span>Arrivals:</span>
+                        <span className="font-medium text-[#111827] tabular-nums">{currentZone.factors.arrivals}</span>
+                      </div>
+                      <div className="flex justify-between text-[#6B7280]">
+                        <span>Velocity:</span>
+                        <span className="font-medium text-[#111827] tabular-nums">{currentZone.factors.velocity}</span>
+                      </div>
+                      <div className="flex justify-between text-[#6B7280]">
+                        <span>Corridor State:</span>
+                        <span className="font-medium text-[#111827]">{currentZone.factors.downstream}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[#6B7280] pt-1 border-t border-[#E5E7EB]">
+                        <span>Risk Level:</span>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#EFF6FF] text-[#1E40AF] font-medium text-[11px]">
+                          {currentZone.risk}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2 pt-1">
+                      <button 
+                        onClick={() => {
+                          onShowToast('Units Dispatched', `Steward squad assigned to Sector ${selectedZone}`);
+                        }}
+                        className="w-full py-2.5 px-4 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[13px] font-medium flex items-center justify-center gap-2 transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">alt_route</span>
+                        Reroute Metro Arrivals to Entry B
+                      </button>
+                      <button 
+                        onClick={() => {
+                          onShowToast('Turnstiles Throttled', 'Entry C turnstile cycle set to 45s pulse');
+                        }}
+                        className="w-full py-2 px-4 rounded-lg bg-white border border-[#E5E7EB] hover:bg-[#F9FAFB] text-[#111827] text-[13px] font-medium flex items-center justify-center gap-2 transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[18px] text-[#6B7280]">pause_circle</span>
+                        Pulse-Throttle Turnstiles (45s Cycles)
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Dispatch Roster */}
+                  <div className="border-t border-[#E5E7EB] pt-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[12px] font-semibold text-[#111827]">Command Dispatch Roster</span>
+                      <span className="text-[11px] text-[#6B7280]">2 active units</span>
+                    </div>
+                    <div className="space-y-2 text-[12px]">
+                      <div className="p-2.5 rounded-lg bg-[#F9FAFB] border border-[#E5E7EB] flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-[#2563EB]"></span>
+                          <span className="font-medium text-[#111827]">Steward Squad Charlie</span>
+                        </div>
+                        <span className="px-2 py-0.5 rounded bg-[#EFF6FF] text-[#2563EB] text-[11px] font-medium">En Route E3</span>
+                      </div>
+                      <div className="p-2.5 rounded-lg bg-[#F9FAFB] border border-[#E5E7EB] flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-[#059669]"></span>
+                          <span className="font-medium text-[#111827]">Med-Team 04 (Rapid)</span>
+                        </div>
+                        <span className="text-[11px] text-[#6B7280]">Station B3</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </aside>
+            </div>
+          </main>
+
+          {/* Intercept Modal */}
+          {interceptModalOpen && (
+            <div className="fixed inset-0 bg-[#111827]/40 z-50 flex items-center justify-center p-4">
+              <div className="bg-white border border-[#E5E7EB] rounded-lg max-w-lg w-full p-6">
+                <div className="flex items-center justify-between border-b border-[#E5E7EB] pb-3 mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[20px] text-[#2563EB]">campaign</span>
+                    <h3 className="text-[20px] font-semibold text-[#111827]">Tactical Crowd Intercept Protocol</h3>
+                  </div>
+                  <button onClick={() => setInterceptModalOpen(false)} className="text-[#6B7280] hover:text-[#111827] text-lg font-medium">✕</button>
+                </div>
+                <p className="text-[14px] text-[#6B7280] mb-4">
+                  Authorize variable message signs (VMS) and steward physical barriers to channel projected 1,850 incoming attendees into secondary corridors D1/D2.
+                </p>
+                <div className="space-y-2.5 mb-6 text-[13px]">
+                  <label className="flex items-center gap-2.5 p-2.5 rounded-lg bg-[#F9FAFB] border border-[#E5E7EB] cursor-pointer">
+                    <input defaultChecked type="checkbox" className="w-4 h-4 rounded text-[#2563EB] focus:ring-0 border-[#D1D5DB]"/>
+                    <span className="text-[#111827]">Activate VMS South: "Central Arena Pit Full - Divert to East Entries"</span>
+                  </label>
+                  <label className="flex items-center gap-2.5 p-2.5 rounded-lg bg-[#F9FAFB] border border-[#E5E7EB] cursor-pointer">
+                    <input defaultChecked type="checkbox" className="w-4 h-4 rounded text-[#2563EB] focus:ring-0 border-[#D1D5DB]"/>
+                    <span className="text-[#111827]">Stagger Entry C turnstiles by 30-second intervals</span>
+                  </label>
+                  <label className="flex items-center gap-2.5 p-2.5 rounded-lg bg-[#F9FAFB] border border-[#E5E7EB] cursor-pointer">
+                    <input type="checkbox" className="w-4 h-4 rounded text-[#2563EB] focus:ring-0 border-[#D1D5DB]"/>
+                    <span className="text-[#111827]">Deploy Barrier Bravo-2 at Corridor D3 intersection</span>
+                  </label>
+                </div>
+                <div className="flex items-center justify-end gap-3 text-[14px]">
+                  <button 
+                    onClick={() => setInterceptModalOpen(false)}
+                    className="px-4 py-2 rounded-lg border border-[#E5E7EB] hover:bg-[#F9FAFB] text-[#111827] font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setInterceptModalOpen(false);
+                      onShowToast('Intercept Confirmed', 'VMS signs armed & Entry C turnstile throttled');
+                    }}
+                    className="px-4 py-2 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-medium"
+                  >
+                    Confirm & Execute (Auth: Vance)
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // ==========================================
+    // SCREEN 3: ALERTS & ACTIONS COMPONENT
+    // ==========================================
+    const AlertsActionsScreen = ({ onShowToast }) => {
+      const [filterPriority, setFilterPriority] = useState('ALL');
+      const [actionModal, setActionModal] = useState({ open: false, title: '', cardId: null, operator: 'Commander R. Vance' });
+      const [activeChannel, setActiveChannel] = useState('1');
+      const [dispatchedCards, setDispatchedCards] = useState({});
+      const [dismissedCards, setDismissedCards] = useState({});
+      const [deferredCards, setDeferredCards] = useState({});
+      const [recentLog, setRecentLog] = useState([
+        { title: 'Entry A Pulse Barrier', time: '21:38:04', desc: 'Dispatched by R. Vance · Execution confirmed' },
+        { title: 'Bus Shuttle 3 Redirect', time: '21:22:18', desc: 'Auto-suggest acknowledged · 12 vehicles rerouted' }
+      ]);
+
+      const openConfirmModal = (title, cardId) => {
+        setActionModal({ open: true, title, cardId, operator: 'Commander R. Vance' });
+      };
+
+      const handleConfirmAction = () => {
+        const timeNow = new Date().toLocaleTimeString();
+        setDispatchedCards(prev => ({ ...prev, [actionModal.cardId]: true }));
+        setRecentLog(prev => [
+          { title: actionModal.title, time: timeNow, desc: 'Authorized by Cmdr. Vance · Broadcast active' },
+          ...prev
+        ]);
+        setActionModal({ open: false, title: '', cardId: null, operator: '' });
+        onShowToast('Directive Broadcast', `Logged & transmitted: ${actionModal.title}`);
+      };
+
+      return (
+        <main className="w-full flex-1 bg-white">
+          <div className="max-w-[1600px] mx-auto px-6 py-5 flex flex-col gap-6">
+            {/* Regulatory Anchor Banner */}
+            <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-[12px] text-[#6B7280]">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[16px] text-[#2563EB]">verified_user</span>
+                <span className="font-medium text-[#111827]">Regulatory Protocol Compliant:</span>
+                <span>Insights powered by anonymized network mobility vectors — fully compliant with EU GDPR/ePrivacy; no device or personal identifiers stored.</span>
+              </div>
+              <div className="flex items-center gap-3 text-[12px] text-[#6B7280] tabular-nums">
+                <span className="inline-flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-[#059669]"></span>Vector Latency: 1.8s</span>
+                <span className="text-[#E5E7EB]">|</span>
+                <span>Hash: 8F2A...B09E</span>
+              </div>
+            </div>
+
+            {/* Header Strip & KPIs */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-2 border-b border-[#E5E7EB]">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#DC2626]">
+                    <span className="w-2 h-2 rounded-full bg-[#DC2626]"></span> Stage 4 Escalation Ready
+                  </span>
+                  <span className="text-[#6B7280] text-[12px]">·</span>
+                  <span className="text-[12px] text-[#6B7280]">Auto-refresh: 10s polling</span>
+                </div>
+                <h1 className="text-[20px] font-semibold text-[#111827]">
+                  Predictive Alerts & Intervention Deck
+                </h1>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg px-4 py-2.5 min-w-[130px]">
+                  <div className="text-[12px] text-[#6B7280]">Unresolved</div>
+                  <div className="text-[20px] font-semibold text-[#111827] tabular-nums flex items-baseline gap-1 mt-0.5">
+                    03 <span className="text-[12px] font-normal text-[#6B7280]">Incidents</span>
+                  </div>
+                </div>
+                <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg px-4 py-2.5 min-w-[130px]">
+                  <div className="text-[12px] text-[#6B7280]">Avg Ack Latency</div>
+                  <div className="text-[20px] font-semibold text-[#111827] tabular-nums mt-0.5">1m 42s</div>
+                </div>
+                <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg px-4 py-2.5 min-w-[130px]">
+                  <div className="text-[12px] text-[#6B7280]">Active Units</div>
+                  <div className="text-[20px] font-semibold text-[#111827] tabular-nums mt-0.5">18/20</div>
+                </div>
+                <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg px-4 py-2.5 min-w-[130px]">
+                  <div className="text-[12px] text-[#6B7280]">Threat Level</div>
+                  <div className="text-[20px] font-semibold text-[#DC2626] flex items-center gap-1.5 mt-0.5">
+                    <span className="w-2 h-2 rounded-full bg-[#DC2626]"></span> High
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Split Deck Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Alert Feed (8 cols) */}
+              <div className="lg:col-span-8 flex flex-col gap-5">
+                {/* Priority Filter */}
+                <div className="flex flex-wrap items-center justify-between gap-3 bg-[#F9FAFB] p-2 rounded-lg border border-[#E5E7EB]">
+                  <div className="flex items-center gap-1">
+                    {[
+                      { key: 'ALL', label: 'All Alerts (3)' },
+                      { key: 'CRITICAL', label: 'Critical (1)', color: 'bg-[#DC2626]' },
+                      { key: 'WARNING', label: 'Warning (1)', color: 'bg-[#D97706]' },
+                      { key: 'ADVISORY', label: 'Advisory (1)', color: 'bg-[#2563EB]' }
+                    ].map(f => (
+                      <button
+                        key={f.key}
+                        onClick={() => setFilterPriority(f.key)}
+                        className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors flex items-center gap-1 ${
+                          filterPriority === f.key 
+                            ? 'bg-white text-[#111827] border border-[#E5E7EB]' 
+                            : 'bg-transparent text-[#6B7280] hover:text-[#111827]'
+                        }`}
+                      >
+                        {f.color && <span className={`w-1.5 h-1.5 rounded-full ${f.color}`}></span>}
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2 text-[12px] text-[#6B7280] pr-2 tabular-nums">
+                    <span>Queue Velocity:</span>
+                    <span className="font-medium text-[#111827]">+12.4 pp/min</span>
+                  </div>
+                </div>
+
+                {/* Alert 1 */}
+                {(filterPriority === 'ALL' || filterPriority === 'CRITICAL') && !dismissedCards['c1'] && (
+                  <article className={`bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg overflow-hidden transition-all ${
+                    dispatchedCards['c1'] ? 'opacity-60' : ''
+                  }`}>
+                    <div className="p-4 border-b border-[#E5E7EB] flex flex-wrap items-center justify-between gap-3 bg-white">
+                      <div className="flex items-center gap-3">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-medium bg-[#FEF2F2] text-[#DC2626] border border-[#FEE2E2]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#DC2626]"></span> Priority 1 · Critical
+                        </span>
+                        <h2 className="text-[16px] font-semibold text-[#111827]">Critical Density Surge — Entry C Perimeter</h2>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-0.5 rounded-lg bg-[#F3F4F6] text-[#111827] font-medium text-[12px] border border-[#E5E7EB] tabular-nums">
+                          T-minus 12 mins
+                        </span>
+                        <span className="text-[12px] text-[#6B7280] tabular-nums">EV-9021</span>
+                      </div>
+                    </div>
+                    <div className="p-5 flex flex-col gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className="bg-white p-3 rounded-lg border border-[#E5E7EB]">
+                          <span className="text-[12px] text-[#6B7280]">Projected Saturation</span>
+                          <div className="text-[20px] font-semibold text-[#DC2626] tabular-nums mt-0.5">104%</div>
+                          <div className="text-[12px] text-[#6B7280] mt-1 tabular-nums">Density: <span className="text-[#111827] font-medium">5.2 ppl/m²</span> (Safe max: 4.0)</div>
+                        </div>
+                        <div className="bg-white p-3 rounded-lg border border-[#E5E7EB]">
+                          <span className="text-[12px] text-[#6B7280]">Contributing Surge Event</span>
+                          <div className="text-[14px] font-medium text-[#111827] mt-0.5">Headline Event Ending</div>
+                          <div className="text-[12px] text-[#6B7280] mt-1">Egress vector: SE exit corridor</div>
+                        </div>
+                        <div className="bg-white p-3 rounded-lg border border-[#E5E7EB]">
+                          <span className="text-[12px] text-[#6B7280]">Mobility Delta</span>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="material-symbols-outlined text-[18px] text-[#DC2626]">trending_up</span>
+                            <span className="text-[20px] font-semibold text-[#111827] tabular-nums">+1,420</span>
+                            <span className="text-[12px] text-[#6B7280]">bodies/5m</span>
+                          </div>
+                          <div className="w-full bg-[#E5E7EB] h-1.5 rounded-full mt-2 overflow-hidden">
+                            <div className="bg-[#DC2626] h-full rounded-full" style={{ width: '92%' }}></div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-3.5 bg-white rounded-lg border border-[#E5E7EB] flex items-start gap-3">
+                        <span className="material-symbols-outlined text-[18px] text-[#2563EB] mt-0.5">info</span>
+                        <div>
+                          <div className="text-[12px] font-medium text-[#2563EB]">Recommended Countermeasure</div>
+                          <p className="text-[14px] text-[#111827] mt-0.5">
+                            Deploy 4 additional tactical safety personnel to Entry C outer barrier; redirect incoming pedestrian flow to Entry B bypass corridor immediately.
+                          </p>
+                          <div className="mt-1 text-[12px] text-[#6B7280] tabular-nums">Target sector: Outer Turnstile Array C-East · Est. bottleneck resolution: 6.4 mins</div>
+                        </div>
+                      </div>
+                      <div className="pt-2 flex flex-wrap items-center gap-3">
+                        <button 
+                          disabled={dispatchedCards['c1']}
+                          onClick={() => openConfirmModal('Entry C Tactical Reinforcement', 'c1')}
+                          className={`px-4 py-2 rounded-lg text-[13px] font-medium transition-colors inline-flex items-center gap-1.5 ${
+                            dispatchedCards['c1'] 
+                              ? 'bg-gray-200 text-[#6B7280] cursor-not-allowed' 
+                              : 'bg-[#2563EB] hover:bg-[#1D4ED8] text-white'
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                          {dispatchedCards['c1'] ? 'Dispatched & Signed' : 'Confirm Dispatch & Log Action'}
+                        </button>
+                        <button 
+                          onClick={() => onShowToast('Custom Protocols', 'Opening threshold customizer for Entry C')}
+                          className="px-3.5 py-2 bg-white text-[#111827] border border-[#E5E7EB] rounded-lg text-[13px] font-medium hover:bg-[#F3F4F6] transition-colors"
+                        >
+                          Modify Protocol
+                        </button>
+                        <button 
+                          onClick={() => onShowToast('Radio Patch', 'Radio link established with Team 4 Lead.')}
+                          className="px-3.5 py-2 bg-white text-[#111827] border border-[#E5E7EB] rounded-lg text-[13px] font-medium hover:bg-[#F3F4F6] transition-colors inline-flex items-center gap-1.5"
+                        >
+                          <span className="material-symbols-outlined text-[16px] text-[#6B7280]">cell_tower</span>
+                          Radio Team 4 Lead
+                        </button>
+                        <span className="ml-auto text-[12px] text-[#6B7280] inline-flex items-center gap-1.5 tabular-nums">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#DC2626]"></span> Req. Ack: Level 4
+                        </span>
+                      </div>
+                    </div>
+                  </article>
+                )}
+
+                {/* Alert 2 */}
+                {(filterPriority === 'ALL' || filterPriority === 'WARNING') && !dismissedCards['c2'] && (
+                  <article className={`bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg overflow-hidden transition-all ${
+                    dispatchedCards['c2'] ? 'opacity-60' : ''
+                  }`}>
+                    <div className="p-4 border-b border-[#E5E7EB] flex flex-wrap items-center justify-between gap-3 bg-white">
+                      <div className="flex items-center gap-3">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-medium bg-[#FFFBEB] text-[#D97706] border border-[#FEF3C7]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#D97706]"></span> Priority 2 · Warning
+                        </span>
+                        <h2 className="text-[16px] font-semibold text-[#111827]">Central Arena Front Pit Compression</h2>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-0.5 rounded-lg bg-[#F3F4F6] text-[#111827] font-medium text-[12px] border border-[#E5E7EB] tabular-nums">
+                          T-horizon: 26 min
+                        </span>
+                        <span className="text-[12px] text-[#6B7280] tabular-nums">Forecast: 92%</span>
+                      </div>
+                    </div>
+                    <div className="p-5 flex flex-col gap-4">
+                      <div className="flex flex-col md:flex-row gap-4">
+                        <div className="md:w-2/3">
+                          <p className="text-[14px] text-[#111827] leading-relaxed">
+                            Aggregated cellular ingress rates confirm heavy convergence towards Front Pit Alpha. Estimated crossing of the 90% threshold in 26 minutes during scheduled set switchover.
+                          </p>
+                          <div className="mt-3 p-3 bg-white rounded-lg border border-[#E5E7EB]">
+                            <div className="text-[12px] font-medium text-[#6B7280]">Action Specification</div>
+                            <p className="text-[13px] font-medium text-[#111827] mt-0.5">
+                              Activate Secondary Surge Barriers and initiate Stage Lighting Crowd Pulse Pattern (Protocol B-14).
+                            </p>
+                          </div>
+                        </div>
+                        <div className="md:w-1/3 p-3 bg-white rounded-lg border border-[#E5E7EB] flex flex-col justify-between">
+                          <div className="flex justify-between items-center text-[12px]">
+                            <span className="text-[#6B7280]">Pit Saturation</span>
+                            <span className="text-[#D97706] font-semibold tabular-nums">92% Est.</span>
+                          </div>
+                          <div className="my-2">
+                            <svg className="w-full h-10 text-[#D97706]" fill="none" preserveAspectRatio="none" viewBox="0 0 100 35">
+                              <path d="M0,28 L20,25 L40,24 L60,18 L80,10 L100,4" stroke="currentColor" strokeLinecap="round" strokeWidth="2"></path>
+                              <path d="M0,28 L20,25 L40,24 L60,18 L80,10 L100,4 L100,35 L0,35 Z" fill="currentColor" fillOpacity="0.08"></path>
+                            </svg>
+                          </div>
+                          <div className="flex justify-between text-[11px] text-[#6B7280] tabular-nums">
+                            <span>Now: 68%</span>
+                            <span>+15m: 81%</span>
+                            <span>+26m: 92%</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="pt-2 flex flex-wrap items-center gap-3">
+                        <button 
+                          disabled={dispatchedCards['c2']}
+                          onClick={() => openConfirmModal('Central Arena Secondary Surge Barrier Deploy', 'c2')}
+                          className={`px-4 py-2 rounded-lg text-[13px] font-medium transition-colors ${
+                            dispatchedCards['c2'] 
+                              ? 'bg-gray-200 text-[#6B7280] cursor-not-allowed' 
+                              : 'bg-[#2563EB] hover:bg-[#1D4ED8] text-white'
+                          }`}
+                        >
+                          {dispatchedCards['c2'] ? 'Barrier Deployed & Active' : 'Confirm Barrier Deployment'}
+                        </button>
+                        <button 
+                          onClick={() => {
+                            setDismissedCards(prev => ({ ...prev, c2: true }));
+                            onShowToast('Alert Dismissed', 'Pit compression alert dismissed with reason: manual observer clearance.');
+                          }}
+                          className="px-3.5 py-2 bg-white text-[#111827] border border-[#E5E7EB] rounded-lg text-[13px] font-medium hover:bg-[#F3F4F6] transition-colors"
+                        >
+                          Dismiss With Reason
+                        </button>
+                        <span className="text-[12px] text-[#6B7280] tabular-nums ml-auto">Est. crew dispatch time: 4m 00s</span>
+                      </div>
+                    </div>
+                  </article>
+                )}
+
+                {/* Alert 3 */}
+                {(filterPriority === 'ALL' || filterPriority === 'ADVISORY') && !dismissedCards['c3'] && (
+                  <article className={`bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg overflow-hidden transition-all ${
+                    deferredCards['c3'] ? 'opacity-50' : ''
+                  }`}>
+                    <div className="p-4 border-b border-[#E5E7EB] flex flex-wrap items-center justify-between gap-3 bg-white">
+                      <div className="flex items-center gap-3">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-medium bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB]"></span> Priority 3 · Advisory
+                        </span>
+                        <h2 className="text-[16px] font-semibold text-[#111827]">Hydration Station West Corridor Congestion</h2>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[12px] font-medium text-[#2563EB] tabular-nums">+45% 15m delta</span>
+                      </div>
+                    </div>
+                    <div className="p-5 flex flex-col gap-4">
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div className="max-w-xl">
+                          <p className="text-[14px] text-[#111827] leading-relaxed">
+                            Ambient temperature at 28.5°C driving queue spillover into the secondary transit lane. Current wait time 9.5 mins (benchmark: 3 mins).
+                          </p>
+                          <div className="mt-2 text-[13px] font-medium text-[#111827]">
+                            Recommended Action: Send mobile water distribution quad #2 to relieve queue pressure.
+                          </div>
+                        </div>
+                        <div className="bg-white p-3 rounded-lg border border-[#E5E7EB] text-right min-w-[150px]">
+                          <span className="text-[11px] text-[#6B7280] block">Quad Unit #2</span>
+                          <span className="font-medium text-[#111827] text-[13px]">Standby: Zone D</span>
+                          <span className="text-[12px] text-[#2563EB] block font-medium tabular-nums mt-0.5">2 min transit</span>
+                        </div>
+                      </div>
+                      <div className="pt-2 flex flex-wrap items-center gap-3">
+                        <button 
+                          disabled={dispatchedCards['c3']}
+                          onClick={() => openConfirmModal('Mobile Water Quad Unit #2 Deploy', 'c3')}
+                          className={`px-4 py-2 rounded-lg text-[13px] font-medium transition-colors ${
+                            dispatchedCards['c3'] 
+                              ? 'bg-gray-200 text-[#6B7280] cursor-not-allowed' 
+                              : 'bg-[#2563EB] hover:bg-[#1D4ED8] text-white'
+                          }`}
+                        >
+                          {dispatchedCards['c3'] ? 'Quad #2 En Route' : 'Confirm Action'}
+                        </button>
+                        <button 
+                          onClick={() => {
+                            setDeferredCards(prev => ({ ...prev, c3: true }));
+                            onShowToast('Action Deferred', 'Hydration queue notice postponed 10 minutes.');
+                          }}
+                          className="px-3.5 py-2 bg-white text-[#111827] border border-[#E5E7EB] rounded-lg text-[13px] font-medium hover:bg-[#F3F4F6] transition-colors"
+                        >
+                          Defer 10 Min
+                        </button>
+                        <span className="text-[12px] text-[#6B7280] ml-auto tabular-nums">Auto-escalates if delta reaches +60%</span>
+                      </div>
+                    </div>
+                  </article>
+                )}
+              </div>
+
+              {/* Sidebar Utilities (4 cols) */}
+              <div className="lg:col-span-4 flex flex-col gap-5">
+                {/* Tactical Radio Switchboard */}
+                <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-[#E5E7EB]">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[16px] text-[#6B7280]">settings_voice</span>
+                      <span className="text-[13px] font-semibold text-[#111827]">Tactical Comm Channels</span>
+                    </div>
+                    <span className="w-2 h-2 rounded-full bg-[#059669]"></span>
+                  </div>
+                  <div className="mt-3 flex flex-col gap-2">
+                    <div className={`p-3 rounded-lg border flex items-center justify-between transition-colors ${
+                      activeChannel === '1' ? 'bg-white border-[#2563EB]' : 'bg-white border-[#E5E7EB]'
+                    }`}>
+                      <div>
+                        <div className="text-[13px] font-semibold text-[#111827]">Ch 1: Command & Safety</div>
+                        <div className="text-[11px] text-[#6B7280] tabular-nums">18 receptors · Open TX</div>
+                      </div>
+                      {activeChannel === '1' ? (
+                        <span className="px-2 py-0.5 bg-[#EFF6FF] text-[#2563EB] text-[11px] font-medium rounded">Live</span>
+                      ) : (
+                        <button onClick={() => setActiveChannel('1')} className="px-2.5 py-1 bg-[#F9FAFB] border border-[#E5E7EB] rounded text-[12px] font-medium">Switch</button>
+                      )}
+                    </div>
+
+                    <div className={`p-3 rounded-lg border flex items-center justify-between transition-colors ${
+                      activeChannel === '2' ? 'bg-white border-[#2563EB]' : 'bg-white border-[#E5E7EB]'
+                    }`}>
+                      <div>
+                        <div className="text-[13px] font-medium text-[#111827]">Ch 2: Gate Sectors A–D</div>
+                        <div className="text-[11px] text-[#6B7280]">Team Lead 4 · Active Traffic</div>
+                      </div>
+                      {activeChannel === '2' ? (
+                        <span className="px-2 py-0.5 bg-[#EFF6FF] text-[#2563EB] text-[11px] font-medium rounded">Live</span>
+                      ) : (
+                        <button onClick={() => setActiveChannel('2')} className="px-2.5 py-1 bg-[#F9FAFB] border border-[#E5E7EB] rounded text-[12px] font-medium">Switch</button>
+                      )}
+                    </div>
+
+                    <div className={`p-3 rounded-lg border flex items-center justify-between transition-colors ${
+                      activeChannel === '3' ? 'bg-white border-[#2563EB]' : 'bg-white border-[#E5E7EB]'
+                    }`}>
+                      <div>
+                        <div className="text-[13px] font-medium text-[#111827]">Ch 3: Medical & Hydration</div>
+                        <div className="text-[11px] text-[#6B7280]">Med-Tent 1 & 2 · Standby</div>
+                      </div>
+                      {activeChannel === '3' ? (
+                        <span className="px-2 py-0.5 bg-[#EFF6FF] text-[#2563EB] text-[11px] font-medium rounded">Live</span>
+                      ) : (
+                        <button onClick={() => setActiveChannel('3')} className="px-2.5 py-1 bg-[#F9FAFB] border border-[#E5E7EB] rounded text-[12px] font-medium">Switch</button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-[#E5E7EB] flex items-center justify-between text-[11px] text-[#6B7280]">
+                    <span>Codec: OPUS 24k</span>
+                    <button onClick={() => onShowToast('Audio Hardware', 'PTT peripheral tested normal.')} className="text-[#2563EB] hover:underline font-medium">PTT Settings</button>
+                  </div>
+                </div>
+
+                {/* Realtime Sector Gauges */}
+                <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-[#E5E7EB]">
+                    <span className="text-[13px] font-semibold text-[#111827]">Real-Time Sector Sensors</span>
+                    <span className="text-[11px] text-[#6B7280] tabular-nums">Refreshed 3s ago</span>
+                  </div>
+                  <div className="mt-4 space-y-3.5">
+                    <div>
+                      <div className="flex justify-between text-[12px] mb-1">
+                        <span className="font-medium text-[#111827]">Sec A // Central Arena</span>
+                        <span className="text-[#D97706] font-medium tabular-nums">88%</span>
+                      </div>
+                      <div className="w-full bg-[#E5E7EB] h-1.5 rounded-full overflow-hidden">
+                        <div className="bg-[#D97706] h-full" style={{ width: '88%' }}></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-[12px] mb-1">
+                        <span className="font-medium text-[#111827]">Sec B // East Pavilion</span>
+                        <span className="text-[#6B7280] font-medium tabular-nums">74%</span>
+                      </div>
+                      <div className="w-full bg-[#E5E7EB] h-1.5 rounded-full overflow-hidden">
+                        <div className="bg-[#6B7280] h-full" style={{ width: '74%' }}></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-[12px] mb-1">
+                        <span className="font-medium text-[#111827]">Sec C // Perimeter Gates</span>
+                        <span className="text-[#DC2626] font-medium tabular-nums">94%</span>
+                      </div>
+                      <div className="w-full bg-[#E5E7EB] h-1.5 rounded-full overflow-hidden">
+                        <div className="bg-[#DC2626] h-full" style={{ width: '94%' }}></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-[12px] mb-1">
+                        <span className="font-medium text-[#111827]">Sec D // Food & Retail</span>
+                        <span className="text-[#6B7280] font-medium tabular-nums">58%</span>
+                      </div>
+                      <div className="w-full bg-[#E5E7EB] h-1.5 rounded-full overflow-hidden">
+                        <div className="bg-[#9CA3AF] h-full" style={{ width: '58%' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-[#E5E7EB] flex items-center justify-between text-[12px]">
+                    <span className="text-[#6B7280] tabular-nums">Aggregate: 48,290 pax</span>
+                    <span className="text-[#DC2626] font-medium text-[11px] inline-flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#DC2626]"></span> Peak Active
+                    </span>
+                  </div>
+                </div>
+
+                {/* Verified Actions Stream */}
+                <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-4">
+                  <div className="flex items-center justify-between pb-2 border-b border-[#E5E7EB] mb-3">
+                    <span className="text-[13px] font-semibold text-[#111827]">Recent Verified Actions</span>
+                    <span className="material-symbols-outlined text-[16px] text-[#6B7280]">history</span>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {recentLog.map((log, idx) => (
+                      <div key={idx} className="p-2.5 bg-white rounded-lg border border-[#E5E7EB]">
+                        <div className="flex justify-between text-[12px] font-medium text-[#111827]">
+                          <span>{log.title}</span>
+                          <span className="text-[#6B7280] font-normal tabular-nums">{log.time}</span>
+                        </div>
+                        <p className="text-[#6B7280] text-[11px] mt-0.5">{log.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="p-3 bg-[#F9FAFB] rounded-lg border border-[#E5E7EB] text-[12px] text-[#6B7280]">
+                  <div className="flex items-center gap-1.5 font-medium text-[#111827] mb-1">
+                    <span className="material-symbols-outlined text-[14px] text-[#6B7280]">lock</span>
+                    <span>Audit Enforcement</span>
+                  </div>
+                  All intervention triggers generate an immutable cryptographically hashed audit entry tied to your duty badge credentials.
+                </div>
+              </div>
+            </div>
+
+            {/* Modal */}
+            {actionModal.open && (
+              <div className="fixed inset-0 bg-[#111827]/40 z-[100] flex items-center justify-center p-4">
+                <div className="bg-white border border-[#E5E7EB] rounded-lg max-w-lg w-full p-6 relative">
+                  <div className="flex justify-between items-start pb-4 border-b border-[#E5E7EB] mb-4">
+                    <div>
+                      <span className="px-2 py-0.5 bg-[#EFF6FF] text-[#2563EB] rounded text-[11px] font-medium">Log Entry Recording</span>
+                      <h3 className="text-[18px] font-semibold text-[#111827] mt-1">Confirm Dispatch Execution</h3>
+                    </div>
+                    <button onClick={() => setActionModal({ open: false, title: '', cardId: null, operator: '' })} className="w-8 h-8 rounded border border-[#E5E7EB] text-[#6B7280] hover:bg-[#F3F4F6] flex items-center justify-center transition-colors">
+                      ✕
+                    </button>
+                  </div>
+                  <div className="space-y-4 text-[13px]">
+                    <div className="p-3 bg-[#F9FAFB] rounded-lg border border-[#E5E7EB]">
+                      <div className="text-[11px] text-[#6B7280] uppercase tracking-wider font-medium">Action Order:</div>
+                      <div className="text-[14px] font-semibold text-[#111827] mt-0.5">{actionModal.title}</div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-3 bg-[#F9FAFB] rounded-lg border border-[#E5E7EB]">
+                        <span className="text-[11px] text-[#6B7280] block">Duty Officer</span>
+                        <span className="font-medium text-[#111827] mt-0.5 block">{actionModal.operator}</span>
+                      </div>
+                      <div className="p-3 bg-[#F9FAFB] rounded-lg border border-[#E5E7EB]">
+                        <span className="text-[11px] text-[#6B7280] block">Timestamp</span>
+                        <span className="font-medium text-[#111827] mt-0.5 block tabular-nums">21:42:18 CEST</span>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-[#F9FAFB] rounded-lg border border-[#E5E7EB] text-[12px] text-[#6B7280]">
+                      <span className="font-medium text-[#111827] block mb-0.5">Radio Verification Directive:</span>
+                      Tactical channel notification will broadcast automatically. Physical field units are bound by protocol to confirm on-station arrival within 180 seconds.
+                    </div>
+                    <div className="flex items-center gap-3 pt-2">
+                      <button 
+                        onClick={handleConfirmAction}
+                        className="w-full py-2.5 bg-[#2563EB] text-white font-medium rounded-lg text-[13px] hover:bg-[#1D4ED8] transition-colors"
+                      >
+                        Authorize & Broadcast Order
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </main>
+      );
+    };
+
+    // Main App with MemoryRouter
+    const App = () => {
+      const [audioOn, setAudioOn] = useState(true);
+      const [activeSector, setActiveSector] = useState('ALL');
+      const [toast, setToast] = useState({ visible: false, title: '', msg: '' });
+
+      const showToast = (title, msg) => {
+        setToast({ visible: true, title, msg });
+        setTimeout(() => {
+          setToast(prev => ({ ...prev, visible: false }));
+        }, 4000);
+      };
+
+      return (
+        <div className="min-h-screen flex flex-col bg-[#F9FAFB] text-[#111827]">
+          <Header 
+            audioOn={audioOn} 
+            setAudioOn={setAudioOn} 
+            activeSector={activeSector} 
+            setActiveSector={setActiveSector} 
+          />
+
+          <div className="flex-1 flex flex-col">
+            <Routes>
+              <Route path="/" element={<LiveCrowdMapScreen onShowToast={showToast} />} />
+              <Route path="/live-crowd-map" element={<LiveCrowdMapScreen onShowToast={showToast} />} />
+              <Route path="/alerts" element={<AlertsActionsScreen onShowToast={showToast} />} />
+              <Route path="/alerts-actions" element={<AlertsActionsScreen onShowToast={showToast} />} />
+              <Route path="/decisions" element={<DecisionLogScreen onShowToast={showToast} />} />
+              <Route path="/decision-log" element={<DecisionLogScreen onShowToast={showToast} />} />
+            </Routes>
+          </div>
+
+          <Footer />
+          <Toast toast={toast} onClose={() => setToast(prev => ({ ...prev, visible: false }))} />
+        </div>
+      );
+    };
+
+    const rootElement = document.getElementById('root');
+    const root = createRoot(rootElement);
+    root.render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>
+    );
+  </script>
+</body>
+</html>
