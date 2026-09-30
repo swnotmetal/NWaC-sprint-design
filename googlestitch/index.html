@@ -192,6 +192,10 @@
 
             {/* Right Utilities */}
             <div className="flex items-center gap-3">
+              <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-[#124191]/25 bg-[#F5F8FD] text-[11px]">
+                <span className="font-bold tracking-wide text-[#124191]">NOKIA</span>
+                <span className="text-[#5B78A8]">Network as Code</span>
+              </span>
               <div className="hidden md:flex items-center rounded-lg border border-[#E5E7EB] bg-white px-2.5 py-1 text-xs">
                 <span className="text-[#6B7280] mr-1.5">Sector:</span>
                 <select 
@@ -397,6 +401,7 @@
       const [selectedZone, setSelectedZone] = useState('E3');
       const [heartbeatOn, setHeartbeatOn] = useState(true);
       const [dispatchedZones, setDispatchedZones] = useState({});
+      const [playing, setPlaying] = useState(false);
       const location = useLocation();
       useEffect(() => {
         setHeartbeatOn(true);
@@ -410,6 +415,15 @@
           setHorizon('30');
         }
       }, [location.state]);
+      // Auto-play the forecast timeline (demo mode): Now → +30 → +60 → +90 → loop.
+      useEffect(() => {
+        if (!playing) return;
+        const order = ['now', '30', '60', '90'];
+        const interval = setInterval(() => {
+          setHorizon(prev => order[(order.indexOf(prev) + 1) % order.length]);
+        }, 2000);
+        return () => clearInterval(interval);
+      }, [playing]);
 
       const zoneDatabase = {
         'E3': {
@@ -573,7 +587,7 @@
                   ].map(tab => (
                     <button
                       key={tab.id}
-                      onClick={() => setHorizon(tab.id)}
+                      onClick={() => { setHorizon(tab.id); setPlaying(false); }}
                       className={`px-3 py-1 rounded-[6px] text-[13px] font-medium transition-colors ${
                         horizon === tab.id 
                           ? 'bg-[#2563EB] text-white' 
@@ -584,6 +598,14 @@
                     </button>
                   ))}
                 </div>
+                <button
+                  onClick={() => setPlaying(p => !p)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-[6px] text-[13px] font-medium transition-colors ${playing ? 'bg-[#111827] text-white' : 'bg-[#2563EB] text-white hover:bg-[#1D4ED8]'}`}
+                  aria-label={playing ? 'Pause forecast playback' : 'Play forecast timeline'}
+                >
+                  <span className="material-symbols-outlined text-[16px]">{playing ? 'pause' : 'play_arrow'}</span>
+                  {playing ? 'Pause' : 'Play forecast'}
+                </button>
                 <span className="text-[12px] text-[#6B7280] hidden lg:inline tabular-nums">
                   Confidence: <span className="font-medium text-[#111827]">{HORIZON_CONFIDENCE[horizon]}</span>
                 </span>
