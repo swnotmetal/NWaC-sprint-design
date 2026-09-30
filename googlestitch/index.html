@@ -92,8 +92,8 @@
 
       return (
         <header className="w-full bg-white border-b border-[#E5E7EB] sticky top-0 z-40">
-          <div className="max-w-[1720px] mx-auto h-16 px-6 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-6">
+          <div className="max-w-[1720px] mx-auto min-h-16 px-4 sm:px-6 py-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <div className="flex items-center gap-4 md:gap-6 flex-wrap">
               {/* Brand */}
               <div className="flex items-center gap-3 pr-4 md:border-r md:border-[#E5E7EB]">
                 <div className="w-8 h-8 rounded-lg bg-[#2563EB] flex items-center justify-center text-white">
@@ -101,7 +101,7 @@
                 </div>
                 <div>
                   <div className="text-[14px] font-semibold text-[#111827] leading-tight">PulseGuard Ops</div>
-                  <div className="text-[12px] text-[#6B7280]">Regional Venue · Live Operations</div>
+                  <div className="hidden sm:block text-[12px] text-[#6B7280]">Regional Venue · Live Operations</div>
                 </div>
               </div>
 
@@ -211,7 +211,7 @@
       ];
 
       return (
-        <main className="w-full flex-1 max-w-[1600px] mx-auto px-6 py-6 flex flex-col gap-6">
+        <main className="w-full flex-1 max-w-[1600px] mx-auto px-4 sm:px-6 py-6 flex flex-col gap-6">
           {/* Header */}
           <div className="pb-2 border-b border-[#E5E7EB]">
             <h1 className="text-[20px] font-semibold text-[#111827] leading-tight">Decision Log</h1>
@@ -219,7 +219,7 @@
           </div>
 
           {/* Decision table */}
-          <div className="bg-white border border-[#E5E7EB] rounded-lg overflow-hidden">
+          <div className="bg-white border border-[#E5E7EB] rounded-lg overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-[#F9FAFB] border-b border-[#E5E7EB] text-left text-[12px] text-[#6B7280]">
                 <tr>
@@ -255,36 +255,36 @@
     // values shift per temporal horizon to simulate the forward projection
     // (CAMARA Device Status + Quality on Demand trigger at >90% density).
     const GRID_CELLS = [
-      { id: 'A1', name: 'Perimeter N-W', tone: 'plain' },
-      { id: 'A2', name: 'Entry A (North)', tone: 'light', metric: true, pill: true },
-      { id: 'A3', name: 'North Lawn', tone: 'plain' },
-      { id: 'A4', name: 'Staff Hub', tone: 'plain' },
-      { id: 'A5', name: 'Logistics Bay', tone: 'plain' },
-      { id: 'A6', name: 'Parking Sec-N', tone: 'plain' },
-      { id: 'B1', name: 'West Exposure', tone: 'plain' },
-      { id: 'B2', name: 'Refreshment Terrace W', tone: 'light' },
-      { id: 'B3', name: 'Medical Alpha', tone: 'plain', triage: true },
-      { id: 'B4', name: 'Arena Runway', tone: 'medium' },
-      { id: 'B5', name: 'VIP Deck 1', tone: 'light' },
-      { id: 'B6', name: 'Entry B (VIP)', tone: 'plain', note: 'Flow normal', nameDark: true },
-      { id: 'C1', name: 'Retail Plaza W', tone: 'plain' },
-      { id: 'C2', name: 'AV Tower 01', tone: 'light' },
-      { id: 'C3', name: 'Central Arena Pit', tone: 'dark', metric: true },
-      { id: 'C4', name: 'East Lawn', tone: 'medium' },
-      { id: 'C5', name: 'VIP Deck 2', tone: 'light' },
-      { id: 'C6', name: 'Perimeter E', tone: 'plain' },
-      { id: 'D1', name: 'Rest Area West', tone: 'plain' },
-      { id: 'D2', name: 'Food & Retail', tone: 'light', note: '18 stalls open' },
-      { id: 'D3', name: 'Central Corridor', tone: 'medium' },
-      { id: 'D4', name: 'Sponsor Booths', tone: 'light' },
-      { id: 'D5', name: 'Restrooms E', tone: 'plain' },
-      { id: 'D6', name: 'Production Base', tone: 'plain' },
-      { id: 'E1', name: 'S-W Buffer', tone: 'plain' },
-      { id: 'E2', name: 'Queue Chute W', tone: 'light' },
-      { id: 'E3', name: 'Transit Hub C', tone: 'dark', metric: true, icon: 'train' },
-      { id: 'E4', name: 'South Plaza', tone: 'medium' },
-      { id: 'E5', name: 'Info & Lost', tone: 'plain' },
-      { id: 'E6', name: 'Rideshare / Taxi', tone: 'plain' }
+      { id: 'A1', name: 'Perimeter N-W' },
+      { id: 'A2', name: 'Entry A (North)', metric: true },
+      { id: 'A3', name: 'North Lawn' },
+      { id: 'A4', name: 'Staff Hub' },
+      { id: 'A5', name: 'Logistics Bay' },
+      { id: 'A6', name: 'Parking Sec-N' },
+      { id: 'B1', name: 'West Exposure' },
+      { id: 'B2', name: 'Refreshment Terrace W' },
+      { id: 'B3', name: 'Medical Alpha', triage: true },
+      { id: 'B4', name: 'Arena Runway' },
+      { id: 'B5', name: 'VIP Deck 1' },
+      { id: 'B6', name: 'Entry B (VIP)', note: 'Flow normal' },
+      { id: 'C1', name: 'Retail Plaza W' },
+      { id: 'C2', name: 'AV Tower 01' },
+      { id: 'C3', name: 'Central Arena Pit', metric: true },
+      { id: 'C4', name: 'East Lawn' },
+      { id: 'C5', name: 'VIP Deck 2' },
+      { id: 'C6', name: 'Perimeter E' },
+      { id: 'D1', name: 'Rest Area West' },
+      { id: 'D2', name: 'Food & Retail', note: '18 stalls open' },
+      { id: 'D3', name: 'Central Corridor' },
+      { id: 'D4', name: 'Sponsor Booths' },
+      { id: 'D5', name: 'Restrooms E' },
+      { id: 'D6', name: 'Production Base' },
+      { id: 'E1', name: 'S-W Buffer' },
+      { id: 'E2', name: 'Queue Chute W' },
+      { id: 'E3', name: 'Transit Hub C', metric: true, icon: 'train' },
+      { id: 'E4', name: 'South Plaza' },
+      { id: 'E5', name: 'Info & Lost' },
+      { id: 'E6', name: 'Rideshare / Taxi' }
     ];
 
     // Density (%) per horizon per cell, telling a three-phase story:
@@ -330,13 +330,20 @@
       '90': { title: 'Congestion On Site: Entry C, Central Arena, East Lawn', detail: '· Live: crowd density above the safe limit', eta: 'Active now' }
     };
 
-    // Visual tone classes per cell (kept fixed so the default view is identical
-    // to the original mock; only the density/metric numbers shift per horizon).
+    // Map density to a weather-warning tone (muted: green→yellow→orange→red).
+    const densityTone = (d) => {
+      if (d >= 90) return 'critical';
+      if (d >= 75) return 'high';
+      if (d >= 50) return 'moderate';
+      return 'low';
+    };
+
+    // Muted, not-saturated warning colors for an MVP.
     const TONE_CLASSES = {
-      plain:  { box: 'bg-white border-[#E5E7EB]', id: 'text-[#6B7280]', pct: 'text-[#6B7280]', name: 'text-[11px] text-[#6B7280]', nameRich: 'text-[12px] font-medium text-[#111827]' },
-      light:  { box: 'bg-[#DBEAFE] border-[#BFDBFE]', id: 'text-[#1E40AF]', pct: 'text-[#1E40AF]', name: 'text-[11px] text-[#1E3A8A]', nameRich: 'text-[12px] font-medium text-[#1E3A8A]', pill: 'bg-[#EFF6FF] text-[#1E40AF] font-medium' },
-      medium: { box: 'bg-[#93C5FD] border-[#60A5FA]', id: 'text-[#1E3A8A]', name: 'text-[11px] font-medium text-[#1E3A8A]', nameRich: 'text-[11px] font-medium text-[#1E3A8A]', pill: 'bg-white text-[#1E3A8A] font-medium' },
-      dark:   { box: 'bg-[#2563EB] text-white', id: 'text-white', name: 'text-[12px] font-medium text-white', nameRich: 'text-[12px] font-medium text-white', pill: 'bg-white text-[#2563EB] font-bold' }
+      low:      { box: 'bg-[#E9F3EB] border-[#CDE2D2]', id: 'text-[#3E7A4C]', pct: 'text-[#3E7A4C]', name: 'text-[11px] text-[#4A6B52]', nameRich: 'text-[12px] font-medium text-[#3E7A4C]', metric: 'text-[#5D7F66]' },
+      moderate: { box: 'bg-[#FBF3D3] border-[#E9DFA8]', id: 'text-[#8A7016]', pct: 'text-[#8A7016]', name: 'text-[11px] text-[#8A7016]', nameRich: 'text-[12px] font-medium text-[#7A6212]', metric: 'text-[#8F7A2C]' },
+      high:     { box: 'bg-[#FBE7CE] border-[#EFCDA3]', id: 'text-[#9A5B1A]', pct: 'text-[#9A5B1A]', name: 'text-[11px] font-medium text-[#9A5B1A]', nameRich: 'text-[11px] font-medium text-[#9A5B1A]', metric: 'text-[#A3682A]', pill: 'bg-white text-[#9A5B1A] font-medium' },
+      critical: { box: 'bg-[#F9DCDB] border-[#EAC2C0]', id: 'text-[#A33B38]', pct: 'text-[#A33B38]', name: 'text-[12px] font-medium text-[#A33B38]', nameRich: 'text-[12px] font-medium text-[#A33B38]', metric: 'text-[#A8504D]', pill: 'bg-white text-[#A33B38] font-bold' }
     };
 
     const LiveCrowdMapScreen = ({ onShowToast }) => {
@@ -482,11 +489,11 @@
         <div className="flex-1 flex flex-col">
           {/* Sub-Toolbar */}
           <div className="bg-white border-b border-[#E5E7EB]">
-            <div className="max-w-[1720px] mx-auto px-6 py-3 flex flex-wrap items-center justify-between gap-4">
+            <div className="max-w-[1720px] mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-4">
               {/* Horizon Selector */}
               <div className="flex items-center gap-3">
                 <span className="text-[12px] text-[#6B7280] font-medium">Temporal Horizon:</span>
-                <div className="inline-flex bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-0.5">
+                <div className="inline-flex max-w-full overflow-x-auto bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-0.5">
                   {[
                     { id: 'now', label: 'Now', time: '[21:42]' },
                     { id: '30', label: '+30 min', time: '[22:12]' },
@@ -515,7 +522,7 @@
 
           {/* Calm Forecast Banner */}
           {horizon !== 'now' && (
-            <div className="bg-[#EFF6FF] border-b border-[#DBEAFE] px-6 py-2">
+            <div className="bg-[#EFF6FF] border-b border-[#DBEAFE] px-4 sm:px-6 py-2">
               <div className="max-w-[1720px] mx-auto flex items-center justify-between flex-wrap gap-2 text-[13px]">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-[#DC2626]"></span>
@@ -540,11 +547,11 @@
           )}
 
           {/* Main Layout Surface */}
-          <main className="max-w-[1720px] mx-auto w-full p-6 flex-1 flex flex-col">
+          <main className="max-w-[1720px] mx-auto w-full p-4 sm:p-6 flex-1 flex flex-col">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 items-start">
               {/* Map Canvas (8 of 12 cols = ~66%) */}
               <div className="lg:col-span-8 flex flex-col gap-4">
-                <div className="bg-white border border-[#E5E7EB] rounded-lg p-5 flex flex-col">
+                <div className="bg-white border border-[#E5E7EB] rounded-lg p-4 sm:p-5 flex flex-col">
                   {/* Matrix Header & Legend */}
                   <div className="flex flex-wrap items-center justify-between pb-4 mb-4 border-b border-[#E5E7EB] gap-3">
                     <div className="flex items-center gap-3">
@@ -554,19 +561,19 @@
                     <div className="flex items-center gap-4 text-[12px] text-[#6B7280]">
                       <span className="text-[11px] font-medium uppercase tracking-wider text-[#9CA3AF]">Density:</span>
                       <div className="flex items-center gap-1.5">
-                        <span className="w-3 h-3 rounded-[3px] bg-[#F1F5F9] border border-[#E2E8F0]"></span>
+                        <span className="w-3 h-3 rounded-[3px] bg-[#E9F3EB] border border-[#CDE2D2]"></span>
                         <span>&lt;50%</span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className="w-3 h-3 rounded-[3px] bg-[#DBEAFE] border border-[#BFDBFE]"></span>
+                        <span className="w-3 h-3 rounded-[3px] bg-[#FBF3D3] border border-[#E9DFA8]"></span>
                         <span>50–75%</span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className="w-3 h-3 rounded-[3px] bg-[#93C5FD] border border-[#60A5FA]"></span>
+                        <span className="w-3 h-3 rounded-[3px] bg-[#FBE7CE] border border-[#EFCDA3]"></span>
                         <span>75–90%</span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className="w-3 h-3 rounded-[3px] bg-[#2563EB]"></span>
+                        <span className="w-3 h-3 rounded-[3px] bg-[#F9DCDB] border border-[#EAC2C0]"></span>
                         <span className="font-medium text-[#111827]">&gt;90% (High)</span>
                       </div>
                     </div>
@@ -612,26 +619,25 @@
                   </div>
 
                   {/* Interactive Cell Grid */}
-                  <div className="relative w-full rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] overflow-hidden p-2">
-                    <div className="grid grid-cols-6 gap-2 mb-2 text-center text-[11px] font-medium text-[#6B7280]">
+                  <div className="relative w-full rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] overflow-hidden p-1.5 sm:p-2">
+                    <div className="hidden sm:grid grid-cols-6 gap-2 mb-2 text-center text-[11px] font-medium text-[#6B7280]">
                       <div>COL 1</div><div>COL 2</div><div>COL 3</div><div>COL 4</div><div>COL 5</div><div>COL 6</div>
                     </div>
 
-                    <div className="grid grid-cols-6 grid-rows-5 gap-2 relative z-10 text-[12px]">
+                    <div className="grid grid-cols-6 grid-rows-5 gap-1 sm:gap-2 relative z-10 text-[12px]">
                       {GRID_CELLS.map((cell) => {
                         const density = HORIZON_DENSITY[horizon][cell.id] || 0;
-                        const tone = TONE_CLASSES[cell.tone];
+                        const toneKey = densityTone(density);
+                        const tone = TONE_CLASSES[toneKey];
                         const selected = selectedZone === cell.id;
                         const rich = cell.metric || cell.note || cell.icon;
                         const nameCls = rich ? tone.nameRich : tone.name;
                         const metric = cell.metric ? HORIZON_METRIC[horizon][cell.id] : null;
-                        const ringCls = selected
-                          ? (cell.tone === 'dark' ? 'ring-2 ring-offset-2 ring-[#2563EB]' : 'ring-2 ring-[#2563EB]')
-                          : '';
+                        const ringCls = selected ? 'ring-2 ring-[#2563EB]' : '';
 
                         if (cell.triage) {
                           return (
-                            <div key={cell.id} onClick={() => setSelectedZone(cell.id)} className={`cursor-pointer p-2.5 rounded-lg border flex flex-col justify-between h-24 transition-colors ${ringCls} bg-white border-[#E5E7EB]`}>
+                            <div key={cell.id} onClick={() => setSelectedZone(cell.id)} className={`cursor-pointer p-2 sm:p-2.5 rounded-lg border flex flex-col justify-between h-20 sm:h-24 transition-colors ${ringCls} bg-white border-[#E5E7EB]`}>
                               <div className="flex justify-between items-start"><span className="text-[11px] font-semibold text-[#111827]">{cell.id}</span><span className="text-[11px] text-[#059669] font-medium">Triage</span></div>
                               <div><div className="text-[12px] font-medium text-[#111827]">{cell.name}</div><div className="text-[11px] text-[#6B7280]">4 beds ready</div></div>
                             </div>
@@ -639,22 +645,22 @@
                         }
 
                         return (
-                          <div key={cell.id} onClick={() => setSelectedZone(cell.id)} className={`cursor-pointer p-2.5 rounded-lg ${cell.tone === 'dark' ? '' : 'border '}flex flex-col justify-between h-24 transition-colors ${ringCls} ${tone.box}`}>
+                          <div key={cell.id} onClick={() => setSelectedZone(cell.id)} className={`cursor-pointer p-2 sm:p-2.5 rounded-lg border flex flex-col justify-between h-20 sm:h-24 transition-colors ${ringCls} ${tone.box}`}>
                             <div className="flex justify-between items-start">
                               <span className={`text-[11px] font-semibold ${tone.id}`}>{cell.id}</span>
-                              {cell.tone === 'plain' || cell.tone === 'light' ? (
-                                <span className={`tabular-nums ${tone.pct}`}>{density}%</span>
-                              ) : (
+                              {toneKey === 'high' || toneKey === 'critical' ? (
                                 <span className={`px-1.5 py-0.5 rounded ${tone.pill} text-[11px] tabular-nums`}>{density}%</span>
+                              ) : (
+                                <span className={`tabular-nums ${tone.pct}`}>{density}%</span>
                               )}
                             </div>
                             <div>
-                              <div className={`${nameCls}${cell.icon ? ' flex items-center gap-1' : ''}`}>
+                              <div className={`${nameCls}${cell.icon ? ' flex items-center gap-1' : ''} truncate`}>
                                 {cell.icon && <span className="material-symbols-outlined text-[14px]">{cell.icon}</span>}
                                 {cell.name}
                               </div>
-                              {metric && <div className={`text-[11px] ${cell.tone === 'dark' ? 'text-[#DBEAFE]' : 'text-[#60A5FA]'} tabular-nums`}>{metric}</div>}
-                              {cell.note && <div className={`text-[11px] ${cell.nameDark ? 'text-[#059669]' : 'text-[#60A5FA]'}`}>{cell.note}</div>}
+                              {metric && <div className={`text-[11px] ${tone.metric} tabular-nums`}>{metric}</div>}
+                              {cell.note && <div className={`text-[11px] ${tone.metric}`}>{cell.note}</div>}
                             </div>
                           </div>
                         );
@@ -806,7 +812,7 @@
 
       return (
         <main className="w-full flex-1 bg-white">
-          <div className="max-w-[1600px] mx-auto px-6 py-5 flex flex-col gap-6">
+          <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-5 flex flex-col gap-6">
             {/* Header */}
             <div className="pb-2 border-b border-[#E5E7EB]">
               <h1 className="text-[20px] font-semibold text-[#111827] leading-tight">Alerts &amp; Actions</h1>
