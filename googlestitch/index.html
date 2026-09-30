@@ -370,7 +370,7 @@
 
     // Forecast banner copy (shown for the +30/+60 horizons).
     const HORIZON_BANNER = {
-      '30': { title: 'Predicted Choke: Transit Hub C (E3) to Central Plaza (C3)', detail: '· Forecast: +1,850 arrivals inbound from shuttle drop-off', eta: 'Predicted in ~18 min' },
+      '30': { title: 'Predicted Choke: Transit Hub C (E3) to Central Plaza (C3)', detail: '· Forecast: +1,850 arrivals inbound from drop-off points', eta: 'Predicted in ~18 min' },
       '60': { title: 'Choke Spreading: Central Plaza (C3) to East Lawn (C4)', detail: '· Forecast: +2,940 arrivals sustained across the main paths', eta: 'Predicted in ~44 min' },
       '90': { title: 'Congestion On Site: Entry C, Central Plaza, East Lawn', detail: '· Live: crowd density above the safe limit', eta: 'Active now' }
     };
@@ -421,8 +421,9 @@
           timeToChoke: 'ETA: +18 min',
           chokeFactor: '4.8 ppl/m²',
           risk: 'Severity 4 (High)',
+          driver: 'Inbound arrival surge',
           factors: {
-            arrivals: '3 Shuttles / 12 min',
+            arrivals: 'Arrival surge every 12 min',
             velocity: '224 ppl/min (↑ 38%)',
             downstream: 'Central Walkway D3'
           }
@@ -436,6 +437,7 @@
           timeToChoke: 'Active Capacity',
           chokeFactor: '5.1 ppl/m²',
           risk: 'Severity 5 (Max)',
+          driver: 'Major event in progress',
           factors: {
             arrivals: 'Major event in progress',
             velocity: 'Static high density',
@@ -451,8 +453,9 @@
           timeToChoke: 'Nominal',
           chokeFactor: '2.1 ppl/m²',
           risk: 'Severity 1 (Normal)',
+          driver: 'Steady entry flow',
           factors: {
-            arrivals: 'Bus Shuttles Steady',
+            arrivals: 'Entry flow steady',
             velocity: '88 ppl/min',
             downstream: 'North Lawn Open'
           }
@@ -466,6 +469,7 @@
           timeToChoke: 'Nominal',
           chokeFactor: '1.4 ppl/m²',
           risk: 'Severity 0 (Nominal)',
+          driver: 'Low activity',
           factors: {
             arrivals: '4 Treatment Bays Ready',
             velocity: 'Ambulance Lane Free',
@@ -481,6 +485,7 @@
           timeToChoke: 'Queue Stacking',
           chokeFactor: '3.2 ppl/m²',
           risk: 'Severity 2 (Moderate)',
+          driver: 'Queue buildup at vendors',
           factors: {
             arrivals: '18 Food Trucks Operational',
             velocity: '140 ppl/min dwell',
@@ -496,8 +501,9 @@
           timeToChoke: 'Clear',
           chokeFactor: '1.9 ppl/m²',
           risk: 'Severity 1 (Optimal)',
+          driver: 'Steady entry flow',
           factors: {
-            arrivals: 'VIP Shuttle Flow',
+            arrivals: 'VIP entry flow',
             velocity: '64 ppl/min',
             downstream: 'Upper Terrace Fluid'
           }
@@ -510,6 +516,7 @@
         status: 'Monitoring',
         chokeFactor: '2.4 ppl/m²',
         risk: 'Severity 1 (Normal)',
+        driver: 'Nominal inflow',
         factors: {
           arrivals: 'Nominal Inflow',
           velocity: '110 ppl/min',
@@ -806,13 +813,15 @@
                     </div>
 
                     {/* Forecast driver — why this zone is projected to rise */}
-                    <div className="flex items-center gap-2 text-[11px] text-[#6B7280]">
-                      <span className="material-symbols-outlined text-[14px] text-[#2563EB]">insights</span>
-                      <span>
-                        <span className="font-medium text-[#111827]">Forecast driver:</span>{' '}
-                        {currentZone.factors.arrivals}.
-                      </span>
-                    </div>
+                    {currentZone.isWarning && (
+                      <div className="flex items-center gap-2 text-[11px] text-[#6B7280]">
+                        <span className="material-symbols-outlined text-[14px] text-[#2563EB]">insights</span>
+                        <span>
+                          <span className="font-medium text-[#111827]">Forecast driver:</span>{' '}
+                          {currentZone.driver}.
+                        </span>
+                      </div>
+                    )}
 
                     {/* Response status */}
                     {responded ? (
