@@ -51,6 +51,44 @@
     ::-webkit-scrollbar {
       display: none;
     }
+    /* Unidirectional scrolling ticker */
+    @keyframes marquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .marquee-track {
+      display: flex;
+      width: max-content;
+      animation: marquee 24s linear infinite;
+    }
+    /* Critical-cell heartbeat: double-thump once per 3s cycle */
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1); }
+      22% { transform: scale(1.09); }
+      34% { transform: scale(1); }
+      46% { transform: scale(1.05); }
+      58% { transform: scale(1); }
+    }
+    .heartbeat-cell {
+      animation: heartbeat 3s ease-in-out infinite;
+      position: relative;
+      z-index: 20;
+    }
+    /* Hallmark: no horizontal scroll on any viewport */
+    html, body { overflow-x: clip; }
+    /* Hallmark: always-visible keyboard focus ring */
+    :focus-visible {
+      outline: 2px solid #2563EB;
+      outline-offset: 2px;
+    }
+    /* Hallmark: interactive grid cells show an affordance */
+    .grid-cell:hover { border-color: #2563EB; }
+    /* Hallmark: reduced-motion users get a static, readable view */
+    @media (prefers-reduced-motion: reduce) {
+      .marquee-track { animation: none; width: auto; }
+      .marquee-dup { display: none; }
+      .heartbeat-cell { animation: none; }
+    }
   </style>
 
   <!-- React & Router Dependencies -->
@@ -350,6 +388,12 @@
       const navigate = useNavigate();
       const [horizon, setHorizon] = useState('30');
       const [selectedZone, setSelectedZone] = useState('E3');
+      const [heartbeatOn, setHeartbeatOn] = useState(true);
+      useEffect(() => {
+        setHeartbeatOn(true);
+        const t = setTimeout(() => setHeartbeatOn(false), 15000);
+        return () => clearTimeout(t);
+      }, []);
 
       const zoneDatabase = {
         'E3': {
@@ -522,26 +566,16 @@
 
           {/* Calm Forecast Banner */}
           {horizon !== 'now' && (
-            <div className="bg-[#EFF6FF] border-b border-[#DBEAFE] px-4 sm:px-6 py-2">
-              <div className="max-w-[1720px] mx-auto flex items-center justify-between flex-wrap gap-2 text-[13px]">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#DC2626]"></span>
-                  <span className="font-medium text-[#1E3A8A]">{HORIZON_BANNER[horizon].title}</span>
-                  <span className="text-[#475569] text-[12px] hidden md:inline">{HORIZON_BANNER[horizon].detail}</span>
-                </div>
-                <div className="flex items-center gap-3 text-[12px]">
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#FFF7ED] border border-[#FED7AA] text-[#C2410C] font-medium">
-                    <span className="material-symbols-outlined text-[14px]">cell_tower</span>
-                    QoD auto-engaged
-                  </span>
-                  <span className="text-[#1E3A8A] font-medium tabular-nums">{HORIZON_BANNER[horizon].eta}</span>
-                  <button 
-                    onClick={() => setSelectedZone('E3')}
-                    className="text-[#2563EB] hover:underline font-medium"
-                  >
-                    Focus Zone E3 →
-                  </button>
-                </div>
+            <div className="bg-[#EFF6FF] border-b border-[#DBEAFE] overflow-hidden">
+              <div className="marquee-track py-2">
+                {[0, 1].map(i => (
+                  <div key={i} className={`flex items-center whitespace-nowrap pr-10 text-[13px]${i === 1 ? ' marquee-dup' : ''}`}>
+                    <span className="w-2 h-2 rounded-full bg-[#DC2626] shrink-0 mr-2.5"></span>
+                    <span className="font-medium text-[#1E3A8A]">{HORIZON_BANNER[horizon].title}</span>
+                    <span className="text-[#475569] text-[12px] ml-3">{HORIZON_BANNER[horizon].detail}</span>
+                    <span className="text-[#1E3A8A] font-medium tabular-nums ml-6">· {HORIZON_BANNER[horizon].eta}</span>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -579,25 +613,6 @@
                     </div>
                   </div>
 
-                  {/* Network QoD status (CAMARA Quality on Demand) */}
-                  <div className={`flex flex-wrap items-center justify-between gap-2 mb-4 px-3.5 py-2.5 rounded-lg border ${anyOverThreshold ? 'border-[#F59E0B] bg-[#FFFBEB]' : 'border-[#E5E7EB] bg-[#F9FAFB]'}`}>
-                    <div className="flex items-center gap-2.5">
-                      <span className="relative flex h-2.5 w-2.5">
-                        {anyOverThreshold && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#F59E0B] opacity-60"></span>}
-                        <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${anyOverThreshold ? 'bg-[#F59E0B]' : 'bg-[#059669]'}`}></span>
-                      </span>
-                      <span className={`text-[13px] font-semibold ${anyOverThreshold ? 'text-[#B45309]' : 'text-[#111827]'}`}>
-                        Network QoD {anyOverThreshold ? 'ENGAGED' : 'Standby'}
-                      </span>
-                      <span className="material-symbols-outlined text-[16px] text-[#6B7280]">cell_tower</span>
-                    </div>
-                    <span className={`text-[12px] tabular-nums ${anyOverThreshold ? 'text-[#B45309] font-medium' : 'text-[#6B7280]'}`}>
-                      {anyOverThreshold
-                        ? `Low-latency slice reserved · ${overSectors.length} sector${overSectors.length === 1 ? '' : 's'} above 90%`
-                        : 'Auto-engages at ≥90% predicted density'}
-                    </span>
-                  </div>
-
                   {/* Telemetry Strip */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
                     <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-3">
@@ -633,11 +648,12 @@
                         const rich = cell.metric || cell.note || cell.icon;
                         const nameCls = rich ? tone.nameRich : tone.name;
                         const metric = cell.metric ? HORIZON_METRIC[horizon][cell.id] : null;
+                        const heartbeat = heartbeatOn && density > 95;
                         const ringCls = selected ? 'ring-2 ring-[#2563EB]' : '';
 
                         if (cell.triage) {
                           return (
-                            <div key={cell.id} onClick={() => setSelectedZone(cell.id)} className={`cursor-pointer p-2 sm:p-2.5 rounded-lg border flex flex-col justify-between h-20 sm:h-24 transition-colors ${ringCls} bg-white border-[#E5E7EB]`}>
+                            <div key={cell.id} tabIndex={0} role="button" aria-pressed={selected} onClick={() => setSelectedZone(cell.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedZone(cell.id); } }} className={`grid-cell cursor-pointer p-2 sm:p-2.5 rounded-lg border flex flex-col justify-between h-20 sm:h-24 transition-colors ${ringCls} bg-white border-[#E5E7EB]`}>
                               <div className="flex justify-between items-start"><span className="text-[11px] font-semibold text-[#111827]">{cell.id}</span><span className="text-[11px] text-[#059669] font-medium">Triage</span></div>
                               <div><div className="text-[12px] font-medium text-[#111827]">{cell.name}</div><div className="text-[11px] text-[#6B7280]">4 beds ready</div></div>
                             </div>
@@ -645,7 +661,7 @@
                         }
 
                         return (
-                          <div key={cell.id} onClick={() => setSelectedZone(cell.id)} className={`cursor-pointer p-2 sm:p-2.5 rounded-lg border flex flex-col justify-between h-20 sm:h-24 transition-colors ${ringCls} ${tone.box}`}>
+                          <div key={cell.id} tabIndex={0} role="button" aria-pressed={selected} onClick={() => setSelectedZone(cell.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedZone(cell.id); } }} className={`grid-cell cursor-pointer p-2 sm:p-2.5 rounded-lg border flex flex-col justify-between h-20 sm:h-24 transition-colors ${ringCls} ${tone.box}${heartbeat ? ' heartbeat-cell' : ''}`}>
                             <div className="flex justify-between items-start">
                               <span className={`text-[11px] font-semibold ${tone.id}`}>{cell.id}</span>
                               {toneKey === 'high' || toneKey === 'critical' ? (
