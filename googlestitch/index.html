@@ -139,7 +139,7 @@
                 </div>
                 <div>
                   <div className="text-[14px] font-semibold text-[#111827] leading-tight">Skylark</div>
-                  <div className="hidden sm:block text-[12px] text-[#6B7280]">Regional Venue · Live Operations</div>
+                  <div className="hidden sm:block text-[12px] text-[#6B7280]">Open-Air Site · Live Operations</div>
                 </div>
               </div>
 
@@ -202,8 +202,8 @@
                   <option value="ALL">All Sectors (A–E)</option>
                   <option value="A">Sector A · North Transit</option>
                   <option value="B">Sector B · Mid West/East</option>
-                  <option value="C">Sector C · Central Arena</option>
-                  <option value="D">Sector D · Food & Corridor</option>
+                  <option value="C">Sector C · Central Plaza</option>
+                  <option value="D">Sector D · Food & Walkways</option>
                   <option value="E">Sector E · South Entry C</option>
                 </select>
               </div>
@@ -243,9 +243,9 @@
     const DecisionLogScreen = ({ onShowToast }) => {
       const records = [
         { time: '21:38', zone: 'Entry C', density: 94, action: 'Diverted arrivals to Entry B' },
-        { time: '21:15', zone: 'Central Arena', density: 91, action: 'Opened East barriers' },
+        { time: '21:15', zone: 'Central Plaza', density: 91, action: 'Opened East barriers' },
         { time: '20:42', zone: 'Food & Retail', density: 88, action: 'Rerouted to South Path' },
-        { time: '20:05', zone: 'Entry A', density: 96, action: 'Opened 3 screening lanes' }
+        { time: '20:05', zone: 'Entry A', density: 96, action: 'Opened 3 entry lanes' }
       ];
 
       return (
@@ -293,7 +293,7 @@
     // ==========================================
     // SCREEN 2: LIVE CROWD MAP COMPONENT
     // ==========================================
-    // Venue-agnostic forecast model (mock AI prediction). Density and flow
+    // Open-air forecast model (mock AI prediction). Density and flow
     // values shift per temporal horizon to simulate the forward projection
     // (CAMARA Device Status + Quality on Demand trigger at >90% density).
     const GRID_CELLS = [
@@ -306,24 +306,24 @@
       { id: 'B1', name: 'West Exposure' },
       { id: 'B2', name: 'Refreshment Terrace W' },
       { id: 'B3', name: 'Medical Alpha', triage: true },
-      { id: 'B4', name: 'Arena Runway' },
-      { id: 'B5', name: 'VIP Deck 1' },
+      { id: 'B4', name: 'Main Promenade' },
+      { id: 'B5', name: 'Upper Terrace 1' },
       { id: 'B6', name: 'Entry B (VIP)', note: 'Flow normal' },
       { id: 'C1', name: 'Retail Plaza W' },
-      { id: 'C2', name: 'AV Tower 01' },
-      { id: 'C3', name: 'Central Arena Pit', metric: true },
+      { id: 'C2', name: 'Camera Tower 01' },
+      { id: 'C3', name: 'Central Plaza', metric: true },
       { id: 'C4', name: 'East Lawn' },
-      { id: 'C5', name: 'VIP Deck 2' },
+      { id: 'C5', name: 'Upper Terrace 2' },
       { id: 'C6', name: 'Perimeter E' },
       { id: 'D1', name: 'Rest Area West' },
-      { id: 'D2', name: 'Food & Retail', note: '18 stalls open' },
-      { id: 'D3', name: 'Central Corridor' },
-      { id: 'D4', name: 'Sponsor Booths' },
+      { id: 'D2', name: 'Food & Retail', note: '18 vendors open' },
+      { id: 'D3', name: 'Central Walkway' },
+      { id: 'D4', name: 'Vendor Booths' },
       { id: 'D5', name: 'Restrooms E' },
-      { id: 'D6', name: 'Production Base' },
+      { id: 'D6', name: 'Operations Base' },
       { id: 'E1', name: 'S-W Buffer' },
-      { id: 'E2', name: 'Queue Chute W' },
-      { id: 'E3', name: 'Transit Hub C', metric: true, icon: 'train' },
+      { id: 'E2', name: 'Queue Pen W' },
+      { id: 'E3', name: 'Transit Hub C', metric: true, icon: 'directions_bus' },
       { id: 'E4', name: 'South Plaza' },
       { id: 'E5', name: 'Info & Lost' },
       { id: 'E6', name: 'Rideshare / Taxi' }
@@ -367,9 +367,9 @@
 
     // Forecast banner copy (shown for the +30/+60 horizons).
     const HORIZON_BANNER = {
-      '30': { title: 'Predicted Choke: Transit Hub C (E3) to Central Arena (C3)', detail: '· Forecast: +1,850 arrivals inbound from transit concourse', eta: 'Predicted in ~18 min' },
-      '60': { title: 'Choke Spreading: Central Arena (C3) to East Lawn (C4)', detail: '· Forecast: +2,940 arrivals sustained across concourse', eta: 'Predicted in ~44 min' },
-      '90': { title: 'Congestion On Site: Entry C, Central Arena, East Lawn', detail: '· Live: crowd density above the safe limit', eta: 'Active now' }
+      '30': { title: 'Predicted Choke: Transit Hub C (E3) to Central Plaza (C3)', detail: '· Forecast: +1,850 arrivals inbound from shuttle drop-off', eta: 'Predicted in ~18 min' },
+      '60': { title: 'Choke Spreading: Central Plaza (C3) to East Lawn (C4)', detail: '· Forecast: +2,940 arrivals sustained across the main paths', eta: 'Predicted in ~44 min' },
+      '90': { title: 'Congestion On Site: Entry C, Central Plaza, East Lawn', detail: '· Live: crowd density above the safe limit', eta: 'Active now' }
     };
 
     // Map density to a weather-warning tone (muted: green→yellow→orange→red).
@@ -410,13 +410,13 @@
           chokeFactor: '4.8 ppl/m²',
           risk: 'Severity 4 (High)',
           factors: {
-            arrivals: '3 Trains / 12 min',
+            arrivals: '3 Shuttles / 12 min',
             velocity: '224 ppl/min (↑ 38%)',
-            downstream: 'Central Corridor D3'
+            downstream: 'Central Walkway D3'
           }
         },
         'C3': {
-          name: 'Central Arena Pit',
+          name: 'Central Plaza',
           tag: 'ZONE C3',
           status: 'Critical',
           isWarning: true,
@@ -425,9 +425,9 @@
           chokeFactor: '5.1 ppl/m²',
           risk: 'Severity 5 (Max)',
           factors: {
-            arrivals: 'Headline event in progress',
+            arrivals: 'Major event in progress',
             velocity: 'Static high density',
-            downstream: 'Corridor C2/C4 locked'
+            downstream: 'Paths C2/C4 locked'
           }
         },
         'A2': {
@@ -455,7 +455,7 @@
           chokeFactor: '1.4 ppl/m²',
           risk: 'Severity 0 (Nominal)',
           factors: {
-            arrivals: '4 Triage Beds Ready',
+            arrivals: '4 Treatment Bays Ready',
             velocity: 'Ambulance Lane Free',
             downstream: 'Perimeter West Open'
           }
@@ -472,7 +472,7 @@
           factors: {
             arrivals: '18 Food Trucks Operational',
             velocity: '140 ppl/min dwell',
-            downstream: 'Hydration queue: 10m'
+            downstream: 'Water queue: 10m'
           }
         },
         'B6': {
@@ -487,13 +487,13 @@
           factors: {
             arrivals: 'VIP Shuttle Flow',
             velocity: '64 ppl/min',
-            downstream: 'Lounge Deck Fluid'
+            downstream: 'Upper Terrace Fluid'
           }
         }
       };
 
       const baseZone = zoneDatabase[selectedZone] || {
-        name: `Tactical Sector ${selectedZone}`,
+        name: `Oracle Sector ${selectedZone}`,
         tag: `ZONE ${selectedZone}`,
         status: 'Monitoring',
         chokeFactor: '2.4 ppl/m²',
@@ -622,7 +622,7 @@
                   {/* Telemetry Strip */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
                     <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-3">
-                      <div className="text-[12px] text-[#6B7280]">Active In-Venue</div>
+                      <div className="text-[12px] text-[#6B7280]">Active On-Site</div>
                       <div className="text-[18px] font-semibold text-[#111827] tabular-nums mt-0.5">{HORIZON_KPI[horizon].inVenue} <span className="text-[12px] text-[#6B7280] font-normal">/ 52,000</span></div>
                     </div>
                     <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-3">
@@ -661,7 +661,7 @@
                           return (
                             <div key={cell.id} tabIndex={0} role="button" aria-pressed={selected} onClick={() => setSelectedZone(cell.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedZone(cell.id); } }} className={`grid-cell cursor-pointer p-2 sm:p-2.5 rounded-lg border flex flex-col justify-between h-20 sm:h-24 transition-colors ${ringCls} bg-white border-[#E5E7EB]`}>
                               <div className="flex justify-between items-start"><span className="text-[11px] font-semibold text-[#111827]">{cell.id}</span><span className="text-[11px] text-[#059669] font-medium">Triage</span></div>
-                              <div><div className="text-[12px] font-medium text-[#111827]">{cell.name}</div><div className="text-[11px] text-[#6B7280]">4 beds ready</div></div>
+                              <div><div className="text-[12px] font-medium text-[#111827]">{cell.name}</div><div className="text-[11px] text-[#6B7280]">4 treatment bays ready</div></div>
                             </div>
                           );
                         }
@@ -775,7 +775,7 @@
                         <span className="font-medium text-[#111827] tabular-nums">{currentZone.factors.velocity}</span>
                       </div>
                       <div className="flex justify-between text-[#6B7280]">
-                        <span>Corridor State:</span>
+                        <span>Downstream:</span>
                         <span className="font-medium text-[#111827]">{currentZone.factors.downstream}</span>
                       </div>
                       <div className="flex justify-between items-center text-[#6B7280] pt-1 border-t border-[#E5E7EB]">
@@ -794,16 +794,16 @@
                         className="w-full py-2.5 px-4 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[13px] font-medium flex items-center justify-center gap-2 transition-colors"
                       >
                         <span className="material-symbols-outlined text-[18px]">alt_route</span>
-                        Reroute Metro Arrivals to Entry B
+                        Reroute Shuttle Arrivals to Entry B
                       </button>
                       <button 
                         onClick={() => {
-                          onShowToast('Turnstiles Throttled', 'Entry C turnstile cycle set to 45s pulse');
+                          onShowToast('Gates Throttled', 'Entry C gate cycle set to 45s pulse');
                         }}
                         className="w-full py-2 px-4 rounded-lg bg-white border border-[#E5E7EB] hover:bg-[#F9FAFB] text-[#111827] text-[13px] font-medium flex items-center justify-center gap-2 transition-colors"
                       >
                         <span className="material-symbols-outlined text-[18px] text-[#6B7280]">pause_circle</span>
-                        Pulse-Throttle Turnstiles (45s Cycles)
+                        Pulse-Throttle Entry Gates (45s Cycles)
                       </button>
                     </div>
                   </div>
@@ -875,7 +875,7 @@
                       <div className="p-3.5 bg-white rounded-lg border border-[#E5E7EB] flex items-start gap-3">
                         <span className="material-symbols-outlined text-[18px] text-[#2563EB] mt-0.5">info</span>
                         <p className="text-[14px] text-[#111827]">
-                          Deploy 4 additional staff to the Entry C outer barrier; redirect incoming pedestrian flow to the Entry B bypass corridor.
+                          Deploy 4 additional staff to the Entry C outer barrier; redirect incoming pedestrian flow to the Entry B bypass route.
                         </p>
                       </div>
                       <div className="pt-1 flex flex-wrap items-center gap-3">
@@ -906,7 +906,7 @@
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-medium bg-[#FFFBEB] text-[#D97706] border border-[#FEF3C7]">
                           <span className="w-1.5 h-1.5 rounded-full bg-[#D97706]"></span> Priority 2 · Warning
                         </span>
-                        <h2 className="text-[16px] font-semibold text-[#111827]">Central Arena Front Pit Compression</h2>
+                        <h2 className="text-[16px] font-semibold text-[#111827]">Central Plaza Crowd Compression</h2>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="px-2.5 py-0.5 rounded-lg bg-[#F3F4F6] text-[#111827] font-medium text-[12px] border border-[#E5E7EB] tabular-nums">
@@ -923,13 +923,13 @@
                       <div className="p-3.5 bg-white rounded-lg border border-[#E5E7EB] flex items-start gap-3">
                         <span className="material-symbols-outlined text-[18px] text-[#2563EB] mt-0.5">info</span>
                         <p className="text-[14px] text-[#111827]">
-                          Activate the secondary surge barriers at the Central Arena front pit to slow forward compression.
+                          Activate the secondary surge barriers at the Central Plaza to slow forward compression.
                         </p>
                       </div>
                       <div className="pt-1 flex flex-wrap items-center gap-3">
                         <button 
                           disabled={dispatchedCards['c2']}
-                          onClick={() => openConfirmModal('Central Arena Secondary Surge Barrier Deploy', 'c2')}
+                          onClick={() => openConfirmModal('Central Plaza Secondary Surge Barrier Deploy', 'c2')}
                           className={`px-4 py-2 rounded-lg text-[13px] font-medium transition-colors ${
                             dispatchedCards['c2'] 
                               ? 'bg-gray-200 text-[#6B7280] cursor-not-allowed' 
@@ -953,7 +953,7 @@
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-medium bg-[#EFF6FF] text-[#2563EB] border border-[#DBEAFE]">
                           <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB]"></span> Priority 3 · Advisory
                         </span>
-                        <h2 className="text-[16px] font-semibold text-[#111827]">Hydration Station West Corridor Congestion</h2>
+                        <h2 className="text-[16px] font-semibold text-[#111827]">Water Point West Path Congestion</h2>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-[12px] font-medium text-[#2563EB] tabular-nums">+45% 15m delta</span>
@@ -967,7 +967,7 @@
                       <div className="p-3.5 bg-white rounded-lg border border-[#E5E7EB] flex items-start gap-3">
                         <span className="material-symbols-outlined text-[18px] text-[#2563EB] mt-0.5">info</span>
                         <p className="text-[14px] text-[#111827]">
-                          Send the mobile water team to the west corridor to relieve queue pressure.
+                          Send the mobile water team to the west path to relieve queue pressure.
                         </p>
                       </div>
                       <div className="pt-1 flex flex-wrap items-center gap-3">
