@@ -393,6 +393,7 @@
       const [horizon, setHorizon] = useState('30');
       const [selectedZone, setSelectedZone] = useState('E3');
       const [heartbeatOn, setHeartbeatOn] = useState(true);
+      const [dispatchedZones, setDispatchedZones] = useState({});
       useEffect(() => {
         setHeartbeatOn(true);
         const t = setTimeout(() => setHeartbeatOn(false), 15000);
@@ -508,24 +509,28 @@
       // Horizon-aware overlay: predicted density and choke ETA come from the
       // forecast model, so the inspector shifts as the operator scrubs time.
       // Cells without a density reading (e.g. medical/triage) keep their base text.
-      const zoneDensity = HORIZON_DENSITY[horizon][selectedZone];
+      const rawZoneDensity = HORIZON_DENSITY[horizon][selectedZone];
       const zoneMetric = HORIZON_METRIC[horizon][selectedZone] || '';
       // Distinguish flow (ppl/min) from density (ppl/m²): C3's metric is a
       // density reading and must drive Choke Factor, never Velocity.
       const isFlowMetric = zoneMetric.includes('ppl/min');
-      const overThreshold = zoneDensity != null && zoneDensity >= 90;
+      // QoD triggers on the raw forecast; a dispatched response re-projects the
+      // risk down without un-triggering the network reservation.
+      const overThreshold = rawZoneDensity != null && rawZoneDensity >= 90;
       // Site-wide check: does any sector cross the QoD trigger threshold this horizon?
       const overSectors = GRID_CELLS.filter(cell => {
         const d = HORIZON_DENSITY[horizon][cell.id];
         return d != null && d >= 90;
       });
       const anyOverThreshold = overSectors.length > 0;
+      const responded = dispatchedZones[selectedZone];
+      const zoneDensity = responded ? Math.max(0, rawZoneDensity - 12) : rawZoneDensity;
       const currentZone = {
         ...baseZone,
         predDensity: zoneDensity != null ? `${zoneDensity}%` : baseZone.predDensity,
-        timeToChoke: overThreshold ? (horizon === 'now' ? 'Active Capacity' : `ETA: +${horizon} min`) : (zoneDensity != null ? 'Nominal' : baseZone.timeToChoke),
-        isWarning: zoneDensity != null && zoneDensity >= 75,
-        status: overThreshold ? 'Critical' : (zoneDensity != null && zoneDensity >= 75 ? 'Warning' : baseZone.status),
+        timeToChoke: responded ? 'Response active' : (overThreshold ? (horizon === 'now' ? 'Active Capacity' : `ETA: +${horizon} min`) : (zoneDensity != null ? 'Nominal' : baseZone.timeToChoke)),
+        isWarning: responded ? false : (zoneDensity != null && zoneDensity >= 75),
+        status: responded ? 'Responding' : (overThreshold ? 'Critical' : (zoneDensity != null && zoneDensity >= 75 ? 'Warning' : baseZone.status)),
         chokeFactor: isFlowMetric ? baseZone.chokeFactor : (zoneMetric || baseZone.chokeFactor),
         factors: {
           ...baseZone.factors,
@@ -619,6 +624,33 @@
                     </div>
                   </div>
 
+                  {/* Network Response — the Network-as-Code moment */}
+                  <div className={`rounded-lg border px-4 py-3 mb-4 transition-colors ${anyOverThreshold ? 'border-[#F59E0B] bg-[#FFFBEB]' : 'border-[#E5E7EB] bg-[#F9FAFB]'}`}>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <span className="relative flex h-3 w-3 shrink-0">
+                          {anyOverThreshold && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#F59E0B] opacity-60"></span>}
+                          <span className={`relative inline-flex h-3 w-3 rounded-full ${anyOverThreshold ? 'bg-[#F59E0B]' : 'bg-[#059669]'}`}></span>
+                        </span>
+                        <div>
+                          <div className={`text-[14px] font-semibold ${anyOverThreshold ? 'text-[#B45309]' : 'text-[#111827]'}`}>
+                            Network QoD {anyOverThreshold ? 'ENGAGED' : 'Standby'}
+                            <span className="text-[11px] font-normal text-[#6B7280] ml-2">via Nokia Network as Code</span>
+                          </div>
+                          <div className={`text-[12px] mt-0.5 ${anyOverThreshold ? 'text-[#B45309]' : 'text-[#6B7280]'}`}>
+                            {anyOverThreshold
+                              ? <span>100Gbps · 15ms slice reserved · covering {overSectors.map(s => s.id).join(' · ')}</span>
+                              : 'Auto-engages the moment predicted density crosses 90%'}
+                          </div>
+                        </div>
+                      </div>
+                      <span className={`inline-flex items-center gap-1.5 text-[12px] font-semibold tabular-nums ${anyOverThreshold ? 'text-[#D97706]' : 'text-[#059669]'}`}>
+                        <span className="material-symbols-outlined text-[16px]">cell_tower</span>
+                        {anyOverThreshold ? 'LIVE' : 'ARMED'}
+                      </span>
+                    </div>
+                  </div>
+
                   {/* Telemetry Strip */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
                     <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-3">
@@ -647,14 +679,16 @@
 
                     <div className="grid grid-cols-6 grid-rows-5 gap-1 sm:gap-2 relative z-10 text-[12px]">
                       {GRID_CELLS.map((cell) => {
-                        const density = HORIZON_DENSITY[horizon][cell.id] || 0;
+                        const rawDensity = HORIZON_DENSITY[horizon][cell.id] || 0;
+                        const respondedCell = dispatchedZones[cell.id];
+                        const density = respondedCell ? Math.max(0, rawDensity - 12) : rawDensity;
                         const toneKey = densityTone(density);
                         const tone = TONE_CLASSES[toneKey];
                         const selected = selectedZone === cell.id;
                         const rich = cell.metric || cell.note || cell.icon;
                         const nameCls = rich ? tone.nameRich : tone.name;
                         const metric = cell.metric ? HORIZON_METRIC[horizon][cell.id] : null;
-                        const heartbeat = heartbeatOn && density > 95;
+                        const heartbeat = heartbeatOn && rawDensity > 95;
                         const ringCls = selected ? 'ring-2 ring-[#2563EB]' : '';
 
                         if (cell.triage) {
@@ -669,11 +703,14 @@
                         return (
                           <div key={cell.id} tabIndex={0} role="button" aria-pressed={selected} onClick={() => setSelectedZone(cell.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedZone(cell.id); } }} className={`grid-cell cursor-pointer p-2 sm:p-2.5 rounded-lg border flex flex-col justify-between h-20 sm:h-24 transition-colors ${ringCls} ${tone.box}${heartbeat ? ' heartbeat-cell' : ''}`}>
                             <div className="flex justify-between items-start">
-                              <span className={`text-[11px] font-semibold ${tone.id}`}>{cell.id}</span>
+                              <span className={`text-[11px] font-semibold ${tone.id} flex items-center gap-1`}>
+                                {cell.id}
+                                {respondedCell && <span className="material-symbols-outlined text-[12px] text-[#059669]">check_circle</span>}
+                              </span>
                               {toneKey === 'high' || toneKey === 'critical' ? (
-                                <span className={`px-1.5 py-0.5 rounded ${tone.pill} text-[11px] tabular-nums`}>{density}%</span>
+                                <span className={`px-1.5 py-0.5 rounded ${tone.pill} text-[11px] tabular-nums`}>{density}%{respondedCell ? ' ↓' : ''}</span>
                               ) : (
-                                <span className={`tabular-nums ${tone.pct}`}>{density}%</span>
+                                <span className={`tabular-nums ${tone.pct}`}>{density}%{respondedCell ? ' ↓' : ''}</span>
                               )}
                             </div>
                             <div>
@@ -729,23 +766,25 @@
                       </button>
                     </div>
 
-                    {/* Network QoD — predicted trigger */}
-                    <div className={`flex items-start gap-2.5 px-3 py-2.5 rounded-lg border ${overThreshold ? 'border-[#F59E0B] bg-[#FFFBEB]' : 'border-[#E5E7EB] bg-[#F9FAFB]'}`}>
-                      <span className={`material-symbols-outlined text-[18px] ${overThreshold ? 'text-[#D97706]' : 'text-[#059669]'}`}>cell_tower</span>
-                      <div className="flex-1">
-                        <div className={`text-[12px] font-semibold ${overThreshold ? 'text-[#B45309]' : 'text-[#111827]'}`}>
-                          Network QoD {overThreshold ? 'Engaged' : 'Standby'}
+                    {/* Response status */}
+                    {responded ? (
+                      <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-[#D1FAE5] bg-[#ECFDF5]">
+                        <span className="material-symbols-outlined text-[18px] text-[#059669]">check_circle</span>
+                        <div className="flex-1">
+                          <div className="text-[12px] font-semibold text-[#047857]">
+                            {dispatchedZones[selectedZone] === 'advisory' ? 'Advisory broadcast' : 'Steward team dispatched'}
+                          </div>
+                          <p className="text-[11px] leading-snug mt-0.5 text-[#047857]">
+                            Projected density re-scored to {zoneDensity}% (from {rawZoneDensity}%).
+                          </p>
                         </div>
-                        <p className={`text-[11px] leading-snug mt-0.5 ${overThreshold ? 'text-[#B45309]' : 'text-[#6B7280]'}`}>
-                          {overThreshold
-                            ? 'Low-latency slice reserved via Nokia Network as Code — first-responder comms prioritized.'
-                            : 'Auto-engages when predicted density crosses 90%.'}
-                        </p>
                       </div>
-                      <span className={`text-[11px] font-medium tabular-nums ${overThreshold ? 'text-[#D97706]' : 'text-[#059669]'}`}>
-                        {overThreshold ? 'ON' : 'ARMED'}
-                      </span>
-                    </div>
+                    ) : overThreshold ? (
+                      <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-[#F59E0B] bg-[#FFFBEB]">
+                        <span className="material-symbols-outlined text-[18px] text-[#D97706]">warning</span>
+                        <p className="text-[12px] text-[#B45309]">Above safe limit — action recommended.</p>
+                      </div>
+                    ) : null}
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-3">
@@ -789,6 +828,7 @@
                     <div className="flex flex-col gap-2 pt-1">
                       <button 
                         onClick={() => {
+                          setDispatchedZones(prev => ({ ...prev, [selectedZone]: 'stewards' }));
                           onShowToast('Units Dispatched', `Steward squad assigned to Sector ${selectedZone}`);
                         }}
                         className="w-full py-2.5 px-4 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[13px] font-medium flex items-center justify-center gap-2 transition-colors"
@@ -798,6 +838,7 @@
                       </button>
                       <button 
                         onClick={() => {
+                          setDispatchedZones(prev => ({ ...prev, [selectedZone]: 'advisory' }));
                           onShowToast('Advisory Broadcast', `Avoid-area notice sent near Sector ${selectedZone}`);
                         }}
                         className="w-full py-2 px-4 rounded-lg bg-white border border-[#E5E7EB] hover:bg-[#F9FAFB] text-[#111827] text-[13px] font-medium flex items-center justify-center gap-2 transition-colors"
