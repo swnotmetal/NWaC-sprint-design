@@ -220,11 +220,26 @@
                 >
                   Decision Log
                 </Link>
+                <Link
+                  to="/privacy"
+                  className={`px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors flex items-center gap-1.5 ${
+                    location.pathname === '/privacy' 
+                      ? 'bg-[#EDF2F9] text-[#124191] font-semibold' 
+                      : 'text-[#6B7280] hover:text-[#111827] hover:bg-[#F9FAFB]'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[15px]">shield_lock</span>
+                  Privacy
+                </Link>
               </nav>
             </div>
 
             {/* Right Utilities */}
             <div className="flex items-center gap-3">
+              <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-[#D1FAE5] bg-[#ECFDF5] text-[11px] font-medium text-[#047857]">
+                <span className="material-symbols-outlined text-[14px]">shield_lock</span>
+                Anonymized Network Data
+              </span>
               <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-[#124191]/25 bg-[#F5F8FD] text-[11px]">
                 <span className="font-bold tracking-wide text-[#124191]">NOKIA</span>
                 <span className="text-[#5B78A8]">Network as Code</span>
@@ -264,7 +279,10 @@
     const Footer = () => (
       <footer className="w-full bg-white border-t border-[#E5E7EB] py-3 px-6 mt-auto">
         <div className="max-w-[1720px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-[12px] text-[#6B7280]">
-          <div>SEC-OPS OS v4.18.2 · Skylark Platform · Authorized Personnel Only</div>
+          <div className="flex flex-col gap-0.5">
+            <div>SEC-OPS OS v4.18.2 · Skylark Platform · Authorized Personnel Only</div>
+            <div className="text-[11px] text-[#9CA3AF]">Counts only — no names, no device IDs, no individual tracking.</div>
+          </div>
           <div className="flex items-center gap-4 tabular-nums">
             <span>AES-256 GCM</span>
             <span>Node: EU-Central-01</span>
@@ -1188,6 +1206,54 @@
       );
     };
 
+    // ==========================================
+    // SCREEN 4: PRIVACY & DATA (one-page PIA)
+    // ==========================================
+    const PrivacyScreen = () => {
+      const sections = [
+        { icon: 'database', title: 'What we use', body: 'Anonymized crowd counts from the mobile network, via Nokia Network as Code (CAMARA). We see how many people, never who they are.' },
+        { icon: 'block', title: 'What we never do', body: 'No individual tracking. No law-enforcement access. No names, phone numbers, or device IDs. No facial recognition.' },
+        { icon: 'grid_on', title: 'How anonymization works', body: 'Readings are rolled up into 50 m grid cells and irreversibly anonymized at the network edge. A count cannot be reversed back into a person.' },
+        { icon: 'policy', title: 'Legal basis', body: 'GDPR Article 89 — statistics and research — with data minimization. No personal data is stored or processed.' },
+        { icon: 'route', title: 'Roadmap', body: 'Differential privacy: add calibrated noise to counts. Federated learning: train models without moving raw data.' }
+      ];
+
+      return (
+        <main className="w-full flex-1 max-w-[1600px] mx-auto px-4 sm:px-6 py-6 flex flex-col gap-6">
+          <div className="pb-2 border-b border-[#E5E7EB]">
+            <h1 className="text-[20px] font-semibold text-[#111827] leading-tight">Privacy &amp; Data</h1>
+            <p className="text-xs text-[#6B7280] mt-1">One-page privacy impact assessment, in plain language.</p>
+          </div>
+
+          <div className="flex items-start gap-3 rounded-lg border border-[#D1FAE5] bg-[#ECFDF5] px-4 py-3">
+            <span className="material-symbols-outlined text-[20px] text-[#047857] mt-px">shield_lock</span>
+            <div>
+              <div className="text-[14px] font-semibold text-[#047857]">Anonymized Network Data</div>
+              <p className="text-[12px] text-[#047857] mt-0.5 leading-snug">
+                This system works on crowd counts, not people. Data is irreversibly anonymized — no names, no tracking, no law-enforcement access.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {sections.map((s, i) => (
+              <div key={i} className="bg-white border border-[#E5E7EB] rounded-lg p-5 flex items-start gap-3">
+                <span className="material-symbols-outlined text-[22px] text-[#124191] mt-px">{s.icon}</span>
+                <div>
+                  <div className="text-[14px] font-semibold text-[#111827]">{s.title}</div>
+                  <p className="text-[13px] text-[#6B7280] leading-snug mt-1">{s.body}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <p className="mt-2 text-center text-[11px] text-[#9CA3AF] leading-relaxed">
+            This page is a mock privacy assessment for a design-sprint prototype.
+          </p>
+        </main>
+      );
+    };
+
     // Main App with MemoryRouter
     const App = () => {
       const [activeSector, setActiveSector] = useState('ALL');
@@ -1215,6 +1281,7 @@
               <Route path="/alerts-actions" element={<AlertsActionsScreen onShowToast={showToast} />} />
               <Route path="/decisions" element={<DecisionLogScreen onShowToast={showToast} />} />
               <Route path="/decision-log" element={<DecisionLogScreen onShowToast={showToast} />} />
+              <Route path="/privacy" element={<PrivacyScreen />} />
             </Routes>
           </div>
 
